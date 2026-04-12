@@ -41,10 +41,15 @@ export async function packageRoutes(app: FastifyInstance) {
       const zip = new AdmZip(buffer);
       const entries = zip.getEntries();
 
-      // Security: check for path traversal
+      // Security: check for path traversal and malicious paths
       for (const entry of entries) {
-        if (entry.entryName.includes('..')) {
-          return reply.status(400).send({ error: 'Zip contains path traversal' });
+        if (
+          entry.entryName.includes('..') ||
+          entry.entryName.startsWith('/') ||
+          entry.entryName.includes('\0') ||
+          entry.entryName.includes('\\')
+        ) {
+          return reply.status(400).send({ error: 'Zip contains invalid path' });
         }
       }
 
@@ -63,7 +68,7 @@ export async function packageRoutes(app: FastifyInstance) {
         return reply.status(400).send({ error: 'SKILL.md must have YAML frontmatter' });
       }
 
-      const frontmatter = parseYaml(fmMatch[1]);
+      const frontmatter = parseYaml(fmMatch[1], { maxAliasCount: 100 });
       if (!frontmatter.name || !frontmatter.description) {
         return reply.status(400).send({ error: 'SKILL.md frontmatter must have name and description' });
       }
@@ -132,23 +137,7 @@ export async function packageRoutes(app: FastifyInstance) {
 
     const buffer = await storage.get(pkg.filePath);
 
-    // Record download stat
-    const ipHash = createHash('sha256')
-      .update(request.ip || 'unknown')
-      .digest('hex');
-    await prisma.downloadStat.create({
-      data: {
-        skillPackageId: pkg.id,
-        ipHash,
-        userAgent: request.headers['user-agent']?.slice(0, 255),
-      },
-    });
-
-    // Increment count (fire and forget)
-    prisma.skill.update({
-      where: { id: skill.id },
-      data: { downloadCount: { increment: 1 } },
-    }).catch(() => {});
+    await recordDownload(skill.id, pkg.id, request);
 
     return reply
       .header('Content-Type', 'application/zip')
@@ -184,20 +173,7 @@ export async function packageRoutes(app: FastifyInstance) {
 
     const buffer = await storage.get(pkg.filePath);
 
-    const ipHash = createHash('sha256')
-      .update(request.ip || 'unknown')
-      .digest('hex');
-    await prisma.downloadStat.create({
-      data: {
-        skillPackageId: pkg.id,
-        ipHash,
-        userAgent: request.headers['user-agent']?.slice(0, 255),
-      },
-    });
-    prisma.skill.update({
-      where: { id: skill.id },
-      data: { downloadCount: { increment: 1 } },
-    }).catch(() => {});
+    await recordDownload(skill.id, pkg.id, request);
 
     return reply
       .header('Content-Type', 'application/zip')
@@ -205,4 +181,32 @@ export async function packageRoutes(app: FastifyInstance) {
       .header('X-Checksum-SHA256', pkg.checksumSha256)
       .send(buffer);
   });
+}
+
+// ─── Helper ─────────────────────────────────────────────
+async function recordDownload(
+  skillId: string,
+  packageId: string,
+  request: { ip?: string; headers: Record<string, string | string[] | undefined> },
+) {
+  const ipHash = createHash('sha256')
+    .update(request.ip || 'unknown')
+    .digest('hex');
+
+  await prisma.$transaction([
+    prisma.downloadStat.create({
+      data: {
+        skillPackageId: packageId,
+        ipHash,
+        userAgent:
+          typeof request.headers['user-agent'] === 'string'
+            ? request.headers['user-agent'].slice(0, 255)
+            : undefined,
+      },
+    }),
+    prisma.skill.update({
+      where: { id: skillId },
+      data: { downloadCount: { increment: 1 } },
+    }),
+  ]);
 }

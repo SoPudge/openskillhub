@@ -24,11 +24,8 @@ export async function skillRoutes(app: FastifyInstance) {
 
     const where: Record<string, unknown> = {};
 
-    if (visibility) {
-      where.visibility = visibility;
-    } else {
-      where.visibility = 'public';
-    }
+    // Enforce public visibility for unauthenticated requests
+    where.visibility = 'public';
 
     if (category) {
       where.category = { slug: category };
@@ -89,8 +86,11 @@ export async function skillRoutes(app: FastifyInstance) {
 
   // Get skill by name
   app.get<{ Params: { name: string } }>('/:name', async (request, reply) => {
-    const skill = await prisma.skill.findUnique({
-      where: { name: request.params.name },
+    const skill = await prisma.skill.findFirst({
+      where: {
+        name: request.params.name,
+        visibility: 'public', // Only public skills are accessible without auth
+      },
       include: {
         author: { select: { id: true, username: true, displayName: true } },
         category: { select: { id: true, name: true, slug: true } },
@@ -218,38 +218,42 @@ export async function skillRoutes(app: FastifyInstance) {
     return reply.status(204).send();
   });
 
-  // Check updates (batch)
+  // Check updates (batch) — uses single query instead of N+1
   app.post<{
     Body: { skills: { name: string; version: string; agent?: string }[] };
   }>('/check-updates', async (request) => {
     const { skills: installed } = request.body;
-    if (!Array.isArray(installed)) {
+    if (!Array.isArray(installed) || installed.length === 0) {
       return { updates: [] };
     }
-    const updates: { name: string; currentVersion: string; latestVersion: string; hasUpdate: boolean; changelog?: string }[] = [];
 
-    for (const item of installed) {
-      const skill = await prisma.skill.findUnique({
-        where: { name: item.name },
-        include: {
-          versions: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-          },
+    const skillNames = installed.map((s) => s.name);
+    const skills = await prisma.skill.findMany({
+      where: { name: { in: skillNames } },
+      include: {
+        versions: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
         },
-      });
+      },
+    });
 
-      if (!skill?.versions[0]) continue;
-      const latest = skill.versions[0];
-      const hasUpdate = latest.version !== item.version;
-      updates.push({
-        name: item.name,
-        currentVersion: item.version,
-        latestVersion: latest.version,
-        hasUpdate,
-        changelog: latest.changelog || undefined,
-      });
-    }
+    const skillMap = new Map(skills.map((s) => [s.name, s]));
+
+    const updates = installed
+      .map((item) => {
+        const skill = skillMap.get(item.name);
+        if (!skill?.versions[0]) return null;
+        const latest = skill.versions[0];
+        return {
+          name: item.name,
+          currentVersion: item.version,
+          latestVersion: latest.version,
+          hasUpdate: latest.version !== item.version,
+          changelog: latest.changelog || undefined,
+        };
+      })
+      .filter(Boolean);
 
     return { updates };
   });

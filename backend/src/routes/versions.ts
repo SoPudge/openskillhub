@@ -37,8 +37,8 @@ export async function versionRoutes(app: FastifyInstance) {
     const { version, changelog } = request.body;
 
     // Validate semver-ish format
-    if (!/^\d+\.\d+\.\d+$/.test(version)) {
-      return reply.status(400).send({ error: 'Version must be in major.minor.patch format' });
+    if (!/^\d+\.\d+\.\d+([-+].+)?$/.test(version)) {
+      return reply.status(400).send({ error: 'Version must be in semver format (e.g. 1.0.0, 1.0.0-beta.1)' });
     }
 
     const existing = await prisma.skillVersion.findUnique({
