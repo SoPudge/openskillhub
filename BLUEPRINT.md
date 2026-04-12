@@ -636,6 +636,17 @@ metadata:
 - 修复了 BigInt 序列化、check-updates 字段名、shared 包导入等问题
 - 已部署至测试服务器验证
 
+**安全加固 (2026-04-12)**:
+- 移除硬编码 JWT Secret，启动时强制校验环境变量
+- Zip 路径穿越检测增强（绝对路径、null 字节、反斜杠）
+- YAML 解析增加 `maxAliasCount` 限制防止 DoS
+- 未认证请求强制只返回 public skill
+- 下载计数改用 `$transaction` 保证原子性
+- 注册接口增加邮箱/密码/用户名校验
+- check-updates 消除 N+1 查询（批量 findMany）
+- 支持 semver 预发布版本号
+- Prisma 进程优雅退出
+
 ### Phase 2: 用户体系 (User System) 🔶 部分完成
 
 > **目标: 注册用户可以发布和管理自己的技能**
@@ -704,9 +715,9 @@ metadata:
 - [ ] Dockerfile.backend + Dockerfile.frontend 镜像构建
 - [ ] Docker Compose 完整编排 (backend + frontend + PG + MinIO)
 - [ ] 源码部署文档 (环境变量 + systemd/pm2 配置)
-- [ ] 环境变量管理 & 配置优化
+- [x] 环境变量管理 & 配置优化 (启动校验已实现)
 - [ ] Rate limiting
-- [ ] 输入验证加固 (zip 炸弹防护、文件大小限制 — 当前 10MB 上限)
+- [x] 输入验证加固 (zip 路径穿越、YAML DoS、注册校验、10MB 上限)
 - [ ] CI/CD 流水线
 - [ ] 监控 & 日志
 
@@ -759,16 +770,20 @@ Agent Skills 已被 Claude Code、OpenCode、OpenClaw、Cursor、Goose、Amp、J
 
 ## 11. 安全考量
 
-| 威胁 | 防护措施 |
-|------|---------|
-| Zip 炸弹 | 限制上传大小 (10MB)、解压后大小限制、限制文件数 |
-| 路径穿越 | 验证 zip 内文件路径不含 `../` |
-| 恶意脚本 | SKILL.md 的 scripts/ 由 Agent 在沙盒执行，Hub 不执行任何脚本 |
-| SQL 注入 | Prisma ORM 参数化查询 |
-| XSS | Next.js 默认转义、CSP 头 |
-| 暴力破解 | 登录 rate limit、API Key 哈希存储 |
-| IDOR | 所有资源操作校验所有权 |
-| 敏感信息泄露 | API Key 仅在创建时返回原文，后续仅显示前缀 |
+| 威胁 | 防护措施 | 状态 |
+|------|---------|------|
+| Zip 炸弹 | 限制上传大小 (10MB)、解压后大小限制、限制文件数 | ✅ 10MB 上限已实现 |
+| 路径穿越 | 验证 zip 内文件路径不含 `../`、`/`、`\0`、`\\` | ✅ 已实现 |
+| YAML DoS | `maxAliasCount` 限制解析深度 | ✅ 已实现 |
+| 恶意脚本 | SKILL.md 的 scripts/ 由 Agent 在沙盒执行，Hub 不执行任何脚本 | ✅ 设计保证 |
+| SQL 注入 | Prisma ORM 参数化查询 | ✅ 已实现 |
+| XSS | Next.js 默认转义、CSP 头 | 🔶 默认转义已有，CSP 待配置 |
+| 暴力破解 | 登录 rate limit、API Key 哈希存储 | 🔶 哈希已有，rate limit 待加 |
+| IDOR | 所有资源操作校验所有权 | ✅ 已实现 |
+| 敏感信息泄露 | API Key 仅在创建时返回原文，后续仅显示前缀 | ✅ 已实现 |
+| 环境变量泄露 | 启动时强制校验 `JWT_SECRET`、`DATABASE_URL` | ✅ 已实现 |
+| 输入注入 | 注册接口邮箱/密码/用户名格式校验 | ✅ 已实现 |
+| 私有数据泄露 | 未认证请求强制只返回 public visibility 的 skill | ✅ 已实现 |
 
 ---
 
