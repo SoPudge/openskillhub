@@ -610,59 +610,65 @@ metadata:
 
 ## 9. 开发阶段规划
 
-### Phase 1: 基础设施 (Foundation)
+### Phase 1: 基础设施 (Foundation) ✅ 完成
 
 > **目标: 跑通"上传 → 存储 → 下载"完整链路**
 
-- [ ] 初始化 Monorepo 脚手架 (pnpm workspace + tsconfig + eslint + prettier)
-- [ ] `packages/shared`: 定义核心类型 (Skill, Version, Package, AgentType)
-- [ ] `backend/`: Fastify 应用骨架 + Prisma schema 定义
-- [ ] `docker-compose.yml`: PostgreSQL + MinIO 服务
-- [ ] 实现文件存储抽象层 (LocalStorageProvider)
-- [ ] 实现核心 API:
-  - Skills CRUD
+- [x] 初始化 Monorepo 脚手架 (pnpm workspace + tsconfig + prettier)
+- [x] `packages/shared`: 定义核心类型 (Skill, Version, Package, AgentType)
+- [x] `backend/`: Fastify 应用骨架 + Prisma schema 定义
+- [x] `docker-compose.yml`: PostgreSQL + MinIO 服务
+- [x] 实现文件存储抽象层 (LocalStorageProvider)
+- [x] 实现核心 API:
+  - Skills CRUD (创建/搜索/详情/更新/删除)
   - Versions 创建 & 列表
-  - Packages 上传 (zip) & 下载
+  - Packages 上传 (zip) & 下载 (按版本+agent / latest)
   - 上传时验证 zip 内容 (解压检查 SKILL.md)
-- [ ] `frontend/`: Next.js 骨架 + 技能列表页 + 技能详情页
-- [ ] `packages/local-skill`: 完成 SKILL.md + osh.sh 脚本
-  - search, install, list, info 命令
-  - 优先适配 OpenCode
-- [ ] 验证完整链路
+- [x] `frontend/`: Next.js 骨架 + 技能列表页 + 技能详情页
+- [x] `packages/local-skill`: 完成 SKILL.md + osh.sh 脚本
+  - search, install, update, remove, list, info, publish, rollback, config 全部 9 个命令
+  - 适配 OpenCode / OpenClaw / Claude Code / Cursor / Goose / Amp
+- [x] 验证完整链路 (远程服务器端到端测试全部通过)
 
-### Phase 2: 用户体系 (User System)
+**Phase 1 总结 (2026-04-12)**:
+- 后端 12 个 API 端点全部可用，通过 curl 端到端验证
+- 前端 3 个页面正常渲染（首页 / 列表页 / 详情页）
+- 修复了 BigInt 序列化、check-updates 字段名、shared 包导入等问题
+- 已部署至测试服务器验证
+
+### Phase 2: 用户体系 (User System) 🔶 部分完成
 
 > **目标: 注册用户可以发布和管理自己的技能**
 
-- [ ] 用户注册/登录 API (bcrypt + JWT)
-- [ ] API Key 管理 (创建/列出/删除)
-- [ ] 认证中间件 (JWT + API Key 双模式)
+- [x] 用户注册/登录 API (bcrypt + JWT)
+- [x] API Key 管理 (创建/列出/删除)
+- [x] 认证中间件 (JWT + API Key 双模式)
 - [ ] Web 登录/注册页面
 - [ ] 用户 Dashboard (我的技能列表)
-- [ ] 技能所有权校验 (仅作者可编辑/删除)
-- [ ] local-skill 支持 `config` 和 `publish` 命令
+- [x] 技能所有权校验 (仅作者可编辑/删除)
+- [x] local-skill 支持 `config` 和 `publish` 命令
 
-### Phase 3: 发现与分发 (Discovery)
+### Phase 3: 发现与分发 (Discovery) 🔶 部分完成
 
 > **目标: 用户能高效找到需要的技能**
 
-- [ ] 分类系统 (CRUD + 技能关联)
-- [ ] 标签系统 (CRUD + 技能关联)
-- [ ] 全文搜索 (PG tsvector)
-- [ ] 按 Agent 类型筛选
-- [ ] 排序 (下载量/最新/更新时间)
-- [ ] Web 搜索/筛选 UI
-- [ ] 首页热门/最新推荐
+- [x] 分类系统 (CRUD + 技能关联 + 8 个种子分类)
+- [x] 标签系统 (创建时关联 + 热门标签 API)
+- [ ] 全文搜索 (PG tsvector) — 当前使用 ILIKE 模糊匹配
+- [x] 按 Agent 类型筛选
+- [x] 排序 (下载量 / 最新 / 更新时间)
+- [ ] Web 搜索/筛选 UI (基础列表已有，筛选 UI 待完善)
+- [x] 首页热门/最新推荐
 - [ ] 分类导航页面
 
-### Phase 4: 版本与生命周期 (Lifecycle)
+### Phase 4: 版本与生命周期 (Lifecycle) 🔶 部分完成
 
 > **目标: 完成技能的全生命周期管理**
 
-- [ ] 版本比对 & 更新检测 API (`/skills/check-updates`)
-- [ ] local-skill update 命令 (自动检测 + 执行更新)
-- [ ] local-skill rollback 命令 (降级到指定版本)
-- [ ] 下载统计收集与展示
+- [x] 版本比对 & 更新检测 API (`/skills/check-updates`)
+- [x] local-skill update 命令 (自动检测 + 执行更新)
+- [x] local-skill rollback 命令 (降级到指定版本)
+- [ ] 下载统计收集与展示 (基础计数已有，DownloadStat 详细统计待实现)
 - [ ] 技能详情页版本历史 & changelog
 - [ ] Web 统计图表 (下载趋势)
 - [ ] 技能作者数据面板
@@ -673,7 +679,7 @@ metadata:
 
 - [ ] 团队创建/管理
 - [ ] 团队成员角色 (owner/admin/member)
-- [ ] 技能可见性: public / team / private
+- [ ] 技能可见性: public / team / private (schema 已支持 visibility 字段)
 - [ ] 可见性访问控制中间件
 - [ ] 团队页面 (Web)
 - [ ] 评分 & 评论系统 (后续考虑)
@@ -685,7 +691,7 @@ metadata:
 - [ ] 适配 OpenClaw skill 安装路径 (`<workspace>/skills/`, `~/.openclaw/skills/`) & metadata.openclaw 扩展
 - [ ] 适配 Claude Code skill 安装路径 & frontmatter 差异
 - [ ] 适配 Cursor skill 安装
-- [ ] local-skill 的 `--agent` 参数完善
+- [x] local-skill 的 `--agent` 参数 (osh.sh 已实现多 Agent 路径检测)
 - [ ] 按 Agent 类型的安装指引 (Web 详情页)
 - [ ] 技能跨 Agent 兼容性标记
 - [ ] ClawHub 集成探索（OpenClaw 已有 clawhub.ai 技能市场，考虑如何互操作）
@@ -694,13 +700,13 @@ metadata:
 
 > **目标: 可部署、可运维**
 
-- [ ] S3/MinIO 存储适配
+- [ ] S3/MinIO 存储适配 (接口已定义，S3 实现待编写)
 - [ ] Dockerfile.backend + Dockerfile.frontend 镜像构建
 - [ ] Docker Compose 完整编排 (backend + frontend + PG + MinIO)
 - [ ] 源码部署文档 (环境变量 + systemd/pm2 配置)
 - [ ] 环境变量管理 & 配置优化
 - [ ] Rate limiting
-- [ ] 输入验证加固 (zip 炸弹防护、文件大小限制)
+- [ ] 输入验证加固 (zip 炸弹防护、文件大小限制 — 当前 10MB 上限)
 - [ ] CI/CD 流水线
 - [ ] 监控 & 日志
 
