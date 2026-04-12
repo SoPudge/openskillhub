@@ -1,0 +1,6 @@
+{
+  "name": "@openskillhub/local-skill",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local skill (Agent Skills format) for managing OpenSkillHub skills within AI agents"
+}

@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique @db.VarChar(255)
+  username     String    @unique @db.VarChar(64)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  displayName  String?   @map("display_name") @db.VarChar(128)
+  avatarUrl    String?   @map("avatar_url")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  skills    Skill[]
+  apiKeys   ApiKey[]
+  ownedTeams Team[]     @relation("TeamOwner")
+  teamMemberships TeamMember[]
+  downloadStats DownloadStat[]
+
+  @@map("users")
+}
+
+model ApiKey {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  name       String    @db.VarChar(128)
+  keyHash    String    @unique @map("key_hash") @db.VarChar(255)
+  keyPrefix  String    @map("key_prefix") @db.VarChar(8)
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz()
+  expiresAt  DateTime? @map("expires_at") @db.Timestamptz()
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+model Team {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(128)
+  slug      String   @unique @db.VarChar(64)
+  ownerId   String   @map("owner_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  owner   User         @relation("TeamOwner", fields: [ownerId], references: [id])
+  members TeamMember[]
+  skills  Skill[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  teamId   String   @map("team_id") @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  role     String   @default("member") @db.VarChar(20)
+  joinedAt DateTime @default(now()) @map("joined_at") @db.Timestamptz()
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@map("team_members")
+}
+
+model Category {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String  @db.VarChar(64)
+  slug        String  @unique @db.VarChar(64)
+  description String?
+  parentId    String? @map("parent_id") @db.Uuid
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  skills   Skill[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique @db.VarChar(64)
+  slug String @unique @db.VarChar(64)
+
+  skills SkillTagRelation[]
+
+  @@map("tags")
+}
+
+model Skill {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String   @unique @db.VarChar(64)
+  displayName   String   @map("display_name") @db.VarChar(128)
+  description   String
+  authorId      String   @map("author_id") @db.Uuid
+  teamId        String?  @map("team_id") @db.Uuid
+  categoryId    String?  @map("category_id") @db.Uuid
+  visibility    String   @default("public") @db.VarChar(10)
+  homepageUrl   String?  @map("homepage_url")
+  license       String?  @db.VarChar(64)
+  downloadCount Int      @default(0) @map("download_count")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  author   User      @relation(fields: [authorId], references: [id])
+  team     Team?     @relation(fields: [teamId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id])
+  versions SkillVersion[]
+  tags     SkillTagRelation[]
+
+  @@index([name])
+  @@index([visibility])
+  @@index([authorId])
+  @@index([categoryId])
+  @@map("skills")
+}
+
+model SkillVersion {
+  id        String   @id @default(uuid()) @db.Uuid
+  skillId   String   @map("skill_id") @db.Uuid
+  version   String   @db.VarChar(32)
+  changelog String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  skill    Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  packages SkillPackage[]
+
+  @@unique([skillId, version])
+  @@index([skillId])
+  @@map("skill_versions")
+}
+
+model SkillPackage {
+  id               String   @id @default(uuid()) @db.Uuid
+  skillVersionId   String   @map("skill_version_id") @db.Uuid
+  agentType        String   @map("agent_type") @db.VarChar(32)
+  filePath         String   @map("file_path")
+  fileSize         Int      @map("file_size")
+  checksumSha256   String   @map("checksum_sha256") @db.VarChar(64)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  skillVersion SkillVersion   @relation(fields: [skillVersionId], references: [id], onDelete: Cascade)
+  downloadStats DownloadStat[]
+
+  @@unique([skillVersionId, agentType])
+  @@index([skillVersionId])
+  @@map("skill_packages")
+}
+
+model SkillTagRelation {
+  skillId String @map("skill_id") @db.Uuid
+  tagId   String @map("tag_id") @db.Uuid
+
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([skillId, tagId])
+  @@map("skill_tag_relations")
+}
+
+model DownloadStat {
+  id              String   @id @default(uuid()) @db.Uuid
+  skillPackageId  String   @map("skill_package_id") @db.Uuid
+  userId          String?  @map("user_id") @db.Uuid
+  ipHash          String?  @map("ip_hash") @db.VarChar(64)
+  userAgent       String?  @map("user_agent") @db.VarChar(255)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  skillPackage SkillPackage @relation(fields: [skillPackageId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id])
+
+  @@index([skillPackageId])
+  @@index([createdAt])
+  @@map("download_stats")
+}

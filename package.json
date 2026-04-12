@@ -1,0 +1,24 @@
+{
+  "name": "openskillhub",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter @openskillhub/backend --filter @openskillhub/frontend dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "sharp"
+    ]
+  }
+}
