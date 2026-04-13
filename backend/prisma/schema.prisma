@@ -105,6 +105,7 @@ model Skill {
   homepageUrl   String?  @map("homepage_url")
   license       String?  @db.VarChar(64)
   downloadCount Int      @default(0) @map("download_count")
+  searchVector  Unsupported("tsvector")? @map("search_vector")
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 

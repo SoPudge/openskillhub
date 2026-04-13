@@ -3,30 +3,20 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomBytes } from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
+import { validate, RegisterSchema, LoginSchema, ApiKeyCreateSchema, IdParamSchema } from '../lib/validation.js';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 export async function authRoutes(app: FastifyInstance) {
-  // Register
-  app.post<{
-    Body: { email: string; username: string; password: string; displayName?: string };
-  }>('/register', async (request, reply) => {
-    const { email, username, password, displayName } = request.body;
+  // Stricter rate limit for auth endpoints
+  const authRateLimit = { config: { rateLimit: { max: 10, timeWindow: '15 minutes' } } };
 
-    // Input validation
-    if (!email || !username || !password) {
-      return reply.status(400).send({ error: 'email, username, and password are required' });
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return reply.status(400).send({ error: 'Invalid email format' });
-    }
-    if (username.length < 2 || username.length > 64 || !/^[a-zA-Z0-9_-]+$/.test(username)) {
-      return reply.status(400).send({ error: 'Username must be 2-64 chars, alphanumeric/hyphens/underscores' });
-    }
-    if (password.length < 8) {
-      return reply.status(400).send({ error: 'Password must be at least 8 characters' });
-    }
+  // Register
+  app.post('/register', { ...authRateLimit }, async (request, reply) => {
+    const v = validate(RegisterSchema, request.body);
+    if (!v.success) return reply.status(400).send({ error: v.error });
+    const { email, username, password, displayName } = v.data;
 
     const existing = await prisma.user.findFirst({
       where: { OR: [{ email }, { username }] },
@@ -46,10 +36,10 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Login
-  app.post<{
-    Body: { email: string; password: string };
-  }>('/login', async (request, reply) => {
-    const { email, password } = request.body;
+  app.post('/login', { ...authRateLimit }, async (request, reply) => {
+    const v = validate(LoginSchema, request.body);
+    if (!v.success) return reply.status(400).send({ error: v.error });
+    const { email, password } = v.data;
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
@@ -89,13 +79,13 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // Create API key
-  app.post<{
-    Body: { name: string };
-  }>('/api-keys', async (request, reply) => {
+  app.post('/api-keys', async (request, reply) => {
     const userId = await authenticate(request, reply);
     if (!userId) return;
 
-    const { name } = request.body;
+    const v = validate(ApiKeyCreateSchema, request.body);
+    if (!v.success) return reply.status(400).send({ error: v.error });
+    const { name } = v.data;
     const rawKey = `osh_${randomBytes(24).toString('hex')}`;
     const keyPrefix = rawKey.slice(0, 8);
     const keyHash = await bcrypt.hash(rawKey, 10);
@@ -127,8 +117,11 @@ export async function authRoutes(app: FastifyInstance) {
     const userId = await authenticate(request, reply);
     if (!userId) return;
 
+    const pv = validate(IdParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+
     const apiKey = await prisma.apiKey.findFirst({
-      where: { id: request.params.id, userId },
+      where: { id: pv.data.id, userId },
     });
     if (!apiKey) return reply.status(404).send({ error: 'API key not found' });
 

@@ -6,23 +6,27 @@ import { prisma } from '../lib/prisma.js';
 import { createStorage } from '../storage/index.js';
 import { authenticate } from './auth.js';
 import { AGENT_TYPES } from '@openskillhub/shared';
+import { validate, NameVersionParamSchema, NameVersionAgentParamSchema } from '../lib/validation.js';
 
 const storage = createStorage();
 
 export async function packageRoutes(app: FastifyInstance) {
-  // Upload a package
-  app.post<{
-    Params: { name: string; version: string };
-  }>('/:name/versions/:version/packages', async (request, reply) => {
+  // Upload a package (stricter rate limit)
+  app.post('/:name/versions/:version/packages', {
+    config: { rateLimit: { max: 10, timeWindow: '1 hour' } },
+  }, async (request, reply) => {
     const userId = await authenticate(request, reply);
     if (!userId) return;
 
-    const skill = await prisma.skill.findUnique({ where: { name: request.params.name } });
+    const pv = validate(NameVersionParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+
+    const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
     if (skill.authorId !== userId) return reply.status(403).send({ error: 'Not the skill author' });
 
     const skillVersion = await prisma.skillVersion.findUnique({
-      where: { skillId_version: { skillId: skill.id, version: request.params.version } },
+      where: { skillId_version: { skillId: skill.id, version: pv.data.version } },
     });
     if (!skillVersion) return reply.status(404).send({ error: 'Version not found' });
 
@@ -112,10 +116,10 @@ export async function packageRoutes(app: FastifyInstance) {
   });
 
   // Download specific version package
-  app.get<{
-    Params: { name: string; version: string; agent: string };
-  }>('/:name/versions/:version/packages/:agent', async (request, reply) => {
-    const { name, version, agent } = request.params;
+  app.get('/:name/versions/:version/packages/:agent', async (request, reply) => {
+    const pv = validate(NameVersionAgentParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    const { name, version, agent } = pv.data;
 
     const skill = await prisma.skill.findUnique({ where: { name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
@@ -147,10 +151,10 @@ export async function packageRoutes(app: FastifyInstance) {
   });
 
   // Download latest version package
-  app.get<{
-    Params: { name: string; agent: string };
-  }>('/:name/latest/:agent', async (request, reply) => {
-    const { name, agent } = request.params;
+  app.get('/:name/latest/:agent', async (request, reply) => {
+    const pv = validate(NameVersionAgentParamSchema.pick({ name: true, agent: true }), request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    const { name, agent } = pv.data;
 
     const skill = await prisma.skill.findUnique({ where: { name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });

@@ -1,11 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { authenticate } from './auth.js';
+import { validate, VersionCreateSchema, NameParamSchema, NameVersionParamSchema } from '../lib/validation.js';
 
 export async function versionRoutes(app: FastifyInstance) {
   // List versions for a skill
-  app.get<{ Params: { name: string } }>('/:name/versions', async (request, reply) => {
-    const skill = await prisma.skill.findUnique({ where: { name: request.params.name } });
+  app.get('/:name/versions', async (request, reply) => {
+    const pv = validate(NameParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+
+    const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
 
     const versions = await prisma.skillVersion.findMany({
@@ -23,23 +27,20 @@ export async function versionRoutes(app: FastifyInstance) {
   });
 
   // Create a new version
-  app.post<{
-    Params: { name: string };
-    Body: { version: string; changelog?: string };
-  }>('/:name/versions', async (request, reply) => {
+  app.post('/:name/versions', async (request, reply) => {
     const userId = await authenticate(request, reply);
     if (!userId) return;
 
-    const skill = await prisma.skill.findUnique({ where: { name: request.params.name } });
+    const pv = validate(NameParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+
+    const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
     if (skill.authorId !== userId) return reply.status(403).send({ error: 'Not the skill author' });
 
-    const { version, changelog } = request.body;
-
-    // Validate semver-ish format
-    if (!/^\d+\.\d+\.\d+([-+].+)?$/.test(version)) {
-      return reply.status(400).send({ error: 'Version must be in semver format (e.g. 1.0.0, 1.0.0-beta.1)' });
-    }
+    const v = validate(VersionCreateSchema, request.body);
+    if (!v.success) return reply.status(400).send({ error: v.error });
+    const { version, changelog } = v.data;
 
     const existing = await prisma.skillVersion.findUnique({
       where: { skillId_version: { skillId: skill.id, version } },
@@ -56,14 +57,15 @@ export async function versionRoutes(app: FastifyInstance) {
   });
 
   // Get specific version
-  app.get<{
-    Params: { name: string; version: string };
-  }>('/:name/versions/:version', async (request, reply) => {
-    const skill = await prisma.skill.findUnique({ where: { name: request.params.name } });
+  app.get('/:name/versions/:version', async (request, reply) => {
+    const pv = validate(NameVersionParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+
+    const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
 
     const version = await prisma.skillVersion.findUnique({
-      where: { skillId_version: { skillId: skill.id, version: request.params.version } },
+      where: { skillId_version: { skillId: skill.id, version: pv.data.version } },
       include: {
         packages: { select: { agentType: true, fileSize: true, checksumSha256: true } },
       },

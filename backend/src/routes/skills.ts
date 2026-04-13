@@ -2,24 +2,14 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { authenticate } from './auth.js';
 import { AGENT_TYPES } from '@openskillhub/shared';
+import { validate, SkillCreateSchema, SkillUpdateSchema, SkillListQuerySchema, CheckUpdatesSchema, NameParamSchema } from '../lib/validation.js';
 
 export async function skillRoutes(app: FastifyInstance) {
   // List / Search skills
-  app.get<{
-    Querystring: {
-      q?: string;
-      category?: string;
-      tag?: string;
-      agent?: string;
-      visibility?: string;
-      sort?: string;
-      page?: string;
-      limit?: string;
-    };
-  }>('/', async (request) => {
-    const { q, category, tag, agent, visibility, sort, page: pageStr, limit: limitStr } = request.query;
-    const page = Math.max(1, Number(pageStr) || 1);
-    const limit = Math.min(100, Math.max(1, Number(limitStr) || 20));
+  app.get('/', async (request, reply) => {
+    const v = validate(SkillListQuerySchema, request.query);
+    if (!v.success) return reply.status(400).send({ error: v.error });
+    const { q, category, tag, agent, sort, page, limit } = v.data;
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {};
@@ -40,12 +30,18 @@ export async function skillRoutes(app: FastifyInstance) {
       where.versions = { some: { packages: { some: { agentType: agent } } } };
     }
 
+    // Full-text search: use PG tsvector when q is provided
     if (q) {
-      where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { displayName: { contains: q, mode: 'insensitive' } },
-        { description: { contains: q, mode: 'insensitive' } },
-      ];
+      // Convert user query to tsquery (prefix matching with :*)
+      const tsQuery = q.trim().split(/\s+/).map((w) => `${w}:*`).join(' & ');
+      const matchingIds = await prisma.$queryRawUnsafe<{ id: string }[]>(
+        `SELECT id FROM skills WHERE search_vector @@ to_tsquery('english', $1) AND visibility = 'public'`,
+        tsQuery,
+      );
+      if (matchingIds.length === 0) {
+        return { data: [], total: 0, page, limit, totalPages: 0 };
+      }
+      where.id = { in: matchingIds.map((r) => r.id) };
     }
 
     let orderBy: Record<string, string> = { createdAt: 'desc' };
@@ -85,10 +81,13 @@ export async function skillRoutes(app: FastifyInstance) {
   });
 
   // Get skill by name
-  app.get<{ Params: { name: string } }>('/:name', async (request, reply) => {
+  app.get('/:name', async (request, reply) => {
+    const pv = validate(NameParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+
     const skill = await prisma.skill.findFirst({
       where: {
-        name: request.params.name,
+        name: pv.data.name,
         visibility: 'public', // Only public skills are accessible without auth
       },
       include: {
@@ -109,30 +108,13 @@ export async function skillRoutes(app: FastifyInstance) {
   });
 
   // Create skill
-  app.post<{
-    Body: {
-      name: string;
-      displayName: string;
-      description: string;
-      categoryId?: string;
-      visibility?: string;
-      homepageUrl?: string;
-      license?: string;
-      tags?: string[];
-    };
-  }>('/', async (request, reply) => {
+  app.post('/', async (request, reply) => {
     const userId = await authenticate(request, reply);
     if (!userId) return;
 
-    const { name, displayName, description, categoryId, visibility, homepageUrl, license, tags } =
-      request.body;
-
-    // Validate skill name
-    if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(name) || name.length > 64) {
-      return reply
-        .status(400)
-        .send({ error: 'Name must be 2-64 chars, lowercase alphanumeric + hyphens' });
-    }
+    const v = validate(SkillCreateSchema, request.body);
+    if (!v.success) return reply.status(400).send({ error: v.error });
+    const { name, displayName, description, categoryId, visibility, homepageUrl, license, tags } = v.data;
 
     const existing = await prisma.skill.findUnique({ where: { name } });
     if (existing) {
@@ -175,27 +157,22 @@ export async function skillRoutes(app: FastifyInstance) {
   });
 
   // Update skill
-  app.patch<{
-    Params: { name: string };
-    Body: {
-      displayName?: string;
-      description?: string;
-      categoryId?: string;
-      visibility?: string;
-      homepageUrl?: string;
-      license?: string;
-    };
-  }>('/:name', async (request, reply) => {
+  app.patch('/:name', async (request, reply) => {
     const userId = await authenticate(request, reply);
     if (!userId) return;
 
-    const skill = await prisma.skill.findUnique({ where: { name: request.params.name } });
+    const pv = validate(NameParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    const v = validate(SkillUpdateSchema, request.body);
+    if (!v.success) return reply.status(400).send({ error: v.error });
+
+    const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
     if (skill.authorId !== userId) return reply.status(403).send({ error: 'Not the skill author' });
 
     const updated = await prisma.skill.update({
       where: { id: skill.id },
-      data: request.body,
+      data: v.data,
       include: {
         author: { select: { id: true, username: true, displayName: true } },
         tags: { include: { tag: true } },
@@ -206,11 +183,14 @@ export async function skillRoutes(app: FastifyInstance) {
   });
 
   // Delete skill
-  app.delete<{ Params: { name: string } }>('/:name', async (request, reply) => {
+  app.delete('/:name', async (request, reply) => {
     const userId = await authenticate(request, reply);
     if (!userId) return;
 
-    const skill = await prisma.skill.findUnique({ where: { name: request.params.name } });
+    const pv = validate(NameParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+
+    const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
     if (skill.authorId !== userId) return reply.status(403).send({ error: 'Not the skill author' });
 
@@ -219,13 +199,10 @@ export async function skillRoutes(app: FastifyInstance) {
   });
 
   // Check updates (batch) — uses single query instead of N+1
-  app.post<{
-    Body: { skills: { name: string; version: string; agent?: string }[] };
-  }>('/check-updates', async (request) => {
-    const { skills: installed } = request.body;
-    if (!Array.isArray(installed) || installed.length === 0) {
-      return { updates: [] };
-    }
+  app.post('/check-updates', async (request, reply) => {
+    const v = validate(CheckUpdatesSchema, request.body);
+    if (!v.success) return reply.status(400).send({ error: v.error });
+    const { skills: installed } = v.data;
 
     const skillNames = installed.map((s) => s.name);
     const skills = await prisma.skill.findMany({

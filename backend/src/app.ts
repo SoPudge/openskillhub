@@ -2,12 +2,15 @@ import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
+import rateLimit from '@fastify/rate-limit';
 import { prisma } from './lib/prisma.js';
 import { skillRoutes } from './routes/skills.js';
 import { versionRoutes } from './routes/versions.js';
 import { packageRoutes } from './routes/packages.js';
 import { categoryRoutes } from './routes/categories.js';
 import { authRoutes } from './routes/auth.js';
+import { teamRoutes } from './routes/teams.js';
+import { statsRoutes } from './routes/stats.js';
 
 // ─── Startup Validation ─────────────────────────────────
 const REQUIRED_ENV = ['DATABASE_URL', 'JWT_SECRET'] as const;
@@ -34,6 +37,13 @@ await app.register(multipart, {
   },
 });
 
+// ─── Rate Limiting ──────────────────────────────────────
+await app.register(rateLimit, {
+  max: 100,
+  timeWindow: '1 minute',
+  keyGenerator: (request) => request.ip,
+});
+
 // Health check
 app.get('/api/health', async () => ({ status: 'ok' }));
 
@@ -43,6 +53,8 @@ await app.register(skillRoutes, { prefix: '/api/v1/skills' });
 await app.register(versionRoutes, { prefix: '/api/v1/skills' });
 await app.register(packageRoutes, { prefix: '/api/v1/skills' });
 await app.register(categoryRoutes, { prefix: '/api/v1' });
+await app.register(teamRoutes, { prefix: '/api/v1/teams' });
+await app.register(statsRoutes, { prefix: '/api/v1/skills' });
 
 const port = Number(process.env.SERVER_PORT) || 3001;
 const host = process.env.SERVER_HOST || '0.0.0.0';
