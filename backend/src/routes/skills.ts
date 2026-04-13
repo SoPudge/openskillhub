@@ -98,7 +98,7 @@ export async function skillRoutes(app: FastifyInstance) {
         versions: {
           orderBy: { createdAt: 'desc' },
           include: {
-            packages: { select: { agentType: true, fileSize: true } },
+            packages: { select: { agentType: true, fileSize: true, checksumSha256: true } },
           },
         },
       },
