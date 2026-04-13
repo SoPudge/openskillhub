@@ -8,9 +8,9 @@ OpenSkillHub 是一个集中式的技能仓库（类似 npm 之于 Node.js），
 
 - **多 Agent 支持** — OpenCode、OpenClaw、Claude Code、Cursor、Goose、Amp 等
 - **版本管理** — 每个 skill 支持 semver 版本，按 agent 维度上传独立包
-- **搜索发现** — 关键词搜索、分类筛选、标签过滤、下载排行
-- **认证体系** — JWT (Web 登录) + API Key (CLI / Agent)
-- **团队协作** — 私有技能库，团队成员角色管理（规划中）
+- **全文搜索** — PG tsvector 加权全文索引，前缀匹配，分类筛选、标签过滤、下载排行
+- **认证体系** — JWT (Web 登录) + API Key (CLI / Agent)，Rate Limiting + Zod 请求校验
+- **团队协作** — 团队 CRUD、成员管理、owner/admin/member 角色体系
 - **本地 Skill** — 安装 `openskillhub` skill 后即可通过 AI Agent 直接搜索/安装/发布
 
 ## 技术栈
@@ -33,9 +33,9 @@ openskillhub/
 ├── backend/                # Fastify REST API
 │   ├── prisma/             #   Prisma schema + migrations + seed
 │   └── src/
-│       ├── routes/         #   auth, skills, versions, packages, categories
+│       ├── routes/         #   auth, skills, versions, packages, categories, teams, stats
 │       ├── storage/        #   本地/S3 存储抽象
-│       ├── lib/            #   Prisma client
+│       ├── lib/            #   Prisma client, Zod validation schemas
 │       └── app.ts          #   入口
 ├── frontend/               # Next.js 15 Web UI
 │   └── src/
@@ -122,6 +122,15 @@ pnpm dev
 | `GET`    | `/skills/:name/versions/:ver/packages/:agent` | 下载包         | —     |
 | `GET`    | `/skills/:name/latest/:agent`               | 下载最新版       | —     |
 | `POST`   | `/skills/check-updates`                     | 批量检查更新     | —     |
+| `GET`    | `/skills/:name/stats`                       | 下载统计 (天/周/月) | —  |
+| `GET`    | `/teams`                                    | 列出我的团队     | ✓     |
+| `POST`   | `/teams`                                    | 创建团队         | ✓     |
+| `GET`    | `/teams/:slug`                              | 团队详情         | —     |
+| `PATCH`  | `/teams/:slug`                              | 更新团队         | ✓     |
+| `DELETE` | `/teams/:slug`                              | 删除团队         | ✓     |
+| `GET`    | `/teams/:slug/members`                      | 成员列表         | —     |
+| `POST`   | `/teams/:slug/members`                      | 添加成员         | ✓     |
+| `DELETE` | `/teams/:slug/members/:username`            | 移除成员         | ✓     |
 
 ### 搜索参数
 
@@ -200,12 +209,21 @@ cd frontend && pnpm dev &
 ## 开发路线
 
 - [x] **Phase 1** — 核心脚手架 + 上传→存储→下载完整链路
-- [ ] **Phase 2** — CLI SDK + 多 Agent 适配器
-- [ ] **Phase 3** — 前端完善 (登录/注册/发布页/用户中心)
-- [ ] **Phase 4** — 团队 & 权限管理
-- [ ] **Phase 5** — 评论、评分、依赖管理
-- [ ] **Phase 6** — 企业功能 (审计日志/SSO/私有部署)
-- [ ] **Phase 7** — 生态集成 (GitHub Action / CI CD)
+- [x] **Phase 2 (部分)** — 用户认证、API Key、Zod 校验、Rate Limiting
+- [x] **Phase 3 (部分)** — PG 全文搜索 (tsvector + GIN)、分类/标签/筛选、首页推荐
+- [x] **Phase 4 (部分)** — check-updates API、下载统计 API (天/周/月 + 按 Agent 分组)
+- [x] **Phase 5 (部分)** — 团队 CRUD、成员管理 (owner/admin/member)
+- [ ] **Phase 6** — 多 Agent 安装路径适配完善
+- [ ] **Phase 7** — S3 存储、Docker 镜像、CI/CD
+
+### 安全加固
+
+- [x] `@fastify/rate-limit` — 全局 100 req/min，登录 10/15min，上传 10/hour
+- [x] `zod` 请求校验 — 15 个 schema，覆盖所有路由
+- [x] JWT_SECRET 强制 ENV，不含默认值
+- [x] 路径穿越/YAML DoS/zip 炸弹防护
+- [x] 下载计数 `$transaction` 原子操作
+- [x] 启动时环境变量校验 + 优雅退出
 
 ## License
 

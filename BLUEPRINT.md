@@ -665,7 +665,7 @@ metadata:
 
 - [x] 分类系统 (CRUD + 技能关联 + 8 个种子分类)
 - [x] 标签系统 (创建时关联 + 热门标签 API)
-- [ ] 全文搜索 (PG tsvector) — 当前使用 ILIKE 模糊匹配
+- [x] 全文搜索 (PG tsvector + GIN 索引 + 加权搜索 + 前缀匹配)
 - [x] 按 Agent 类型筛选
 - [x] 排序 (下载量 / 最新 / 更新时间)
 - [ ] Web 搜索/筛选 UI (基础列表已有，筛选 UI 待完善)
@@ -679,17 +679,17 @@ metadata:
 - [x] 版本比对 & 更新检测 API (`/skills/check-updates`)
 - [x] local-skill update 命令 (自动检测 + 执行更新)
 - [x] local-skill rollback 命令 (降级到指定版本)
-- [ ] 下载统计收集与展示 (基础计数已有，DownloadStat 详细统计待实现)
-- [ ] 技能详情页版本历史 & changelog
+- [x] 下载统计 API (`/skills/:name/stats?period=day|week|month&days=N` + 按 Agent 分组)
+- [x] 技能详情页版本历史 & changelog (前端已实现)
 - [ ] Web 统计图表 (下载趋势)
 - [ ] 技能作者数据面板
 
-### Phase 5: 团队与可见性 (Team)
+### Phase 5: 团队与可见性 (Team) 🔶 部分完成
 
 > **目标: 支持团队协作和私有技能**
 
-- [ ] 团队创建/管理
-- [ ] 团队成员角色 (owner/admin/member)
+- [x] 团队创建/管理 (CRUD API: POST/GET/PATCH/DELETE /teams)
+- [x] 团队成员角色 (owner/admin/member) + 权限校验
 - [ ] 技能可见性: public / team / private (schema 已支持 visibility 字段)
 - [ ] 可见性访问控制中间件
 - [ ] 团队页面 (Web)
@@ -716,7 +716,8 @@ metadata:
 - [ ] Docker Compose 完整编排 (backend + frontend + PG + MinIO)
 - [ ] 源码部署文档 (环境变量 + systemd/pm2 配置)
 - [x] 环境变量管理 & 配置优化 (启动校验已实现)
-- [ ] Rate limiting
+- [x] Rate limiting (`@fastify/rate-limit`: 全局 100/min，登录 10/15min，上传 10/hour)
+- [x] Zod 请求校验 (15 个 schema，覆盖所有路由 body/params/query)
 - [x] 输入验证加固 (zip 路径穿越、YAML DoS、注册校验、10MB 上限)
 - [ ] CI/CD 流水线
 - [ ] 监控 & 日志
@@ -778,7 +779,7 @@ Agent Skills 已被 Claude Code、OpenCode、OpenClaw、Cursor、Goose、Amp、J
 | 恶意脚本 | SKILL.md 的 scripts/ 由 Agent 在沙盒执行，Hub 不执行任何脚本 | ✅ 设计保证 |
 | SQL 注入 | Prisma ORM 参数化查询 | ✅ 已实现 |
 | XSS | Next.js 默认转义、CSP 头 | 🔶 默认转义已有，CSP 待配置 |
-| 暴力破解 | 登录 rate limit、API Key 哈希存储 | 🔶 哈希已有，rate limit 待加 |
+| 暴力破解 | 登录 rate limit、API Key 哈希存储 | ✅ `@fastify/rate-limit`: 登录 10/15min |
 | IDOR | 所有资源操作校验所有权 | ✅ 已实现 |
 | 敏感信息泄露 | API Key 仅在创建时返回原文，后续仅显示前缀 | ✅ 已实现 |
 | 环境变量泄露 | 启动时强制校验 `JWT_SECRET`、`DATABASE_URL` | ✅ 已实现 |

@@ -18,6 +18,8 @@ AI Agent 技能注册中心，基于 [Agent Skills](https://agentskills.io/) 开
 - **前端**: Next.js 15 (App Router) + React 19
 - **存储**: 本地文件系统 (→ S3/MinIO)
 - **认证**: JWT + API Key 双模式
+- **安全**: @fastify/rate-limit (多级限速) + zod (请求校验)
+- **搜索**: PG tsvector + GIN 索引 + 自动更新触发器
 
 ## 项目结构
 
@@ -25,13 +27,15 @@ AI Agent 技能注册中心，基于 [Agent Skills](https://agentskills.io/) 开
 openskillhub/
 ├── backend/              # Fastify API 服务 (port 3001)
 │   ├── src/
-│   │   ├── app.ts        # 入口 + 中间件 + 启动校验
-│   │   ├── routes/       # auth, skills, versions, packages, categories
+│   │   ├── app.ts        # 入口 + 中间件 + rate-limit + 启动校验
+│   │   ├── routes/       # auth, skills, versions, packages, categories, teams, stats
 │   │   ├── storage/      # 抽象层: local / s3
-│   │   └── lib/prisma.ts # PrismaClient 单例
+│   │   └── lib/
+│   │       ├── prisma.ts # PrismaClient 单例
+│   │       └── validation.ts # 15 个 Zod schema + validate() helper
 │   └── prisma/           # schema + migrations + seed
 ├── frontend/             # Next.js 前端 (port 3000)
-│   └── src/app/          # 3 页面: 首页 / 列表 / 详情
+│   └── src/app/          # 3 页面: 首页 / 列表 / 详情(含版本历史+安装指南)
 ├── packages/
 │   ├── shared/           # 类型 + 常量
 │   └── local-skill/      # SKILL.md + osh.sh CLI
@@ -54,7 +58,7 @@ openskillhub/
 - **仓库**: https://github.com/SoPudge/openskillhub.git
 - **分支**: `main` (稳定), `dev` (开发)
 
-## API 端点 (12 个，全部可用)
+## API 端点 (22 个，全部可用)
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -62,7 +66,7 @@ openskillhub/
 | POST | /auth/login | 登录 → JWT |
 | GET | /auth/me | 当前用户 |
 | POST/GET/DELETE | /auth/api-keys | API Key 管理 |
-| GET | /skills | 搜索/列表 (q, category, tag, agent, sort, page) |
+| GET | /skills | 全文搜索/列表 (q→tsvector, category, tag, agent, sort, page) |
 | GET | /skills/:name | 详情 |
 | POST | /skills | 创建 |
 | PATCH/DELETE | /skills/:name | 更新/删除 (需认证+所有权) |
@@ -71,23 +75,34 @@ openskillhub/
 | POST | /skills/:name/versions/:ver/packages | 上传包 (multipart + agent_type) |
 | GET | /skills/:name/versions/:ver/packages/:agent | 下载包 |
 | GET | /skills/:name/latest/:agent | 下载最新版本包 |
+| GET | /skills/:name/stats | 下载统计 (?period=day\|week\|month&days=N) |
+| GET | /teams | 列出我的团队 (需认证) |
+| POST | /teams | 创建团队 (需认证) |
+| GET | /teams/:slug | 团队详情 |
+| PATCH | /teams/:slug | 更新团队 (owner/admin) |
+| DELETE | /teams/:slug | 删除团队 (仅 owner) |
+| GET | /teams/:slug/members | 成员列表 |
+| POST | /teams/:slug/members | 添加成员 (owner/admin) |
+| DELETE | /teams/:slug/members/:username | 移除成员 (owner/admin/自己离开) |
 
-## 当前进度 (最后更新: 2026-04-12)
+## 当前进度 (最后更新: 2026-04-13)
 
 ### ✅ 已完成
 - **Phase 1 全部**: Monorepo 脚手架、shared 类型、后端 API、前端骨架、local-skill CLI、端到端链路验证
 - **Phase 2 部分**: 用户注册/登录 API、API Key 管理、认证中间件、所有权校验
-- **Phase 3 部分**: 分类 (8 个种子)、标签系统、Agent 筛选、排序、首页推荐
-- **Phase 4 部分**: check-updates API、local-skill update/rollback 命令
-- **安全加固**: JWT 强制校验、路径穿越增强、YAML DoS 防护、注册校验、下载原子性、N+1 修复、优雅退出
+- **Phase 3 部分**: 分类 (8 个种子)、标签系统、Agent 筛选、排序、首页推荐、**PG 全文搜索 (tsvector + GIN + 触发器)**
+- **Phase 4 部分**: check-updates API、local-skill update/rollback 命令、**下载统计 API (天/周/月 + 按 Agent 分组)**
+- **Phase 5 部分**: **团队 CRUD API + 成员管理 (owner/admin/member 角色)**
+- **安全加固**: JWT 强制校验、路径穿越增强、YAML DoS 防护、注册校验、下载原子性、N+1 修复、优雅退出、**@fastify/rate-limit (3 级限速)**、**Zod 请求校验 (15 个 schema)**
+- **前端**: 技能详情页重写 (版本历史 + per-agent 下载 + 自然语言安装指南 + CLI 命令)
 
 ### 🔶 下一步待做
 - Phase 2: Web 登录/注册页面、用户 Dashboard
-- Phase 3: 全文搜索 (PG tsvector)、筛选 UI、分类导航页
-- Phase 4: 下载统计展示、版本历史页、统计图表
-- Phase 5: 团队系统
-- Phase 6: 多 Agent 适配完善
-- Phase 7: S3 存储、Docker 镜像、CI/CD、rate limit
+- Phase 3: 搜索筛选 UI 完善、分类导航页
+- Phase 4: Web 统计图表 (下载趋势)、作者数据面板
+- Phase 5: 技能可见性 (public/team/private) 访问控制、团队页面 (Web)
+- Phase 6: 多 Agent 适配完善 (OpenClaw/Claude Code/Cursor 安装路径)
+- Phase 7: S3 存储、Docker 镜像、CI/CD
 
 ### ⚠️ 已知问题
 - `packages/shared` 的 exports 指向 `./src/index.ts` 而非 `./dist/`（因为 tsx dev 模式不编译，生产构建时需改回）
