@@ -647,6 +647,24 @@ metadata:
 - 支持 semver 预发布版本号
 - Prisma 进程优雅退出
 
+**安全加固 v2 (2026-04-14)**:
+- FTS 搜索注入防护 (sanitize tsquery input)
+- trustProxy 配置 (正确检测代理后客户端 IP)
+- 团队 admin 角色仅 owner 可授予
+- Stats 接口限流 30/min
+- 前端 API 超时控制 (10s AbortController)
+- downloadCount 索引优化排序性能
+
+**Phase 2 完成 (2026-04-14)**:
+- Web 登录/注册页面 (React 客户端组件 + AuthProvider + localStorage JWT)
+- 用户 Dashboard (我的技能列表 + API Key CRUD + 统计卡片)
+- HeaderNav 认证状态显示 (登录/注册 ↔ 用户名/控制面板)
+
+**Phase 5 完成 (2026-04-14)**:
+- 可见性访问控制: optionalAuthenticate + Prisma OR 查询 (public+private+team)
+- 团队页面 `/teams/[slug]`: 成员角色列表 + 团队技能
+- 技能创建支持 teamId + 团队成员校验 + visibility=team 需 teamId
+
 ### Phase 2: 用户体系 (User System) ✅ 完成
 
 > **目标: 注册用户可以发布和管理自己的技能**
