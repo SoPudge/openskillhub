@@ -132,6 +132,42 @@ export async function authRoutes(app: FastifyInstance) {
 
 // ─── Auth Helper ────────────────────────────────────────
 
+/**
+ * Optional authentication — returns userId if valid credentials present, null otherwise.
+ * Does NOT send 401; callers decide how to handle unauthenticated requests.
+ */
+export async function optionalAuthenticate(
+  request: { headers: Record<string, string | string[] | undefined> },
+): Promise<string | null> {
+  const authHeader = request.headers.authorization;
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    try {
+      const payload = jwt.verify(authHeader.slice(7), JWT_SECRET) as { sub: string };
+      return payload.sub;
+    } catch {
+      return null;
+    }
+  }
+
+  const apiKeyHeader = request.headers['x-api-key'];
+  if (typeof apiKeyHeader === 'string') {
+    const keys = await prisma.apiKey.findMany({
+      where: { keyPrefix: apiKeyHeader.slice(0, 8) },
+    });
+    for (const key of keys) {
+      if (await bcrypt.compare(apiKeyHeader, key.keyHash)) {
+        await prisma.apiKey.update({
+          where: { id: key.id },
+          data: { lastUsedAt: new Date() },
+        });
+        return key.userId;
+      }
+    }
+  }
+
+  return null;
+}
+
 export async function authenticate(
   request: { headers: Record<string, string | string[] | undefined> },
   reply: { status: (code: number) => { send: (body: unknown) => unknown } },

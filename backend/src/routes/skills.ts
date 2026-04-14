@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
-import { authenticate } from './auth.js';
+import { authenticate, optionalAuthenticate } from './auth.js';
 import { AGENT_TYPES } from '@openskillhub/shared';
 import { validate, SkillCreateSchema, SkillUpdateSchema, SkillListQuerySchema, CheckUpdatesSchema, NameParamSchema } from '../lib/validation.js';
 
@@ -12,10 +12,21 @@ export async function skillRoutes(app: FastifyInstance) {
     const { q, category, tag, agent, author, sort, page, limit } = v.data;
     const skip = (page - 1) * limit;
 
+    const userId = await optionalAuthenticate(request);
+
     const where: Record<string, unknown> = {};
 
-    // Enforce public visibility for unauthenticated requests
-    where.visibility = 'public';
+    // Visibility: unauthenticated sees only public; authenticated sees public + own private + team skills
+    if (userId) {
+      const teamIds = (await prisma.teamMember.findMany({ where: { userId }, select: { teamId: true } })).map((t) => t.teamId);
+      where.OR = [
+        { visibility: 'public' },
+        { visibility: 'private', authorId: userId },
+        ...(teamIds.length ? [{ visibility: 'team', teamId: { in: teamIds } }] : []),
+      ];
+    } else {
+      where.visibility = 'public';
+    }
 
     if (author) {
       where.author = { username: author };
@@ -43,7 +54,7 @@ export async function skillRoutes(app: FastifyInstance) {
         return { data: [], total: 0, page, limit, totalPages: 0 };
       }
       const matchingIds = await prisma.$queryRawUnsafe<{ id: string }[]>(
-        `SELECT id FROM skills WHERE search_vector @@ to_tsquery('english', $1) AND visibility = 'public'`,
+        `SELECT id FROM skills WHERE search_vector @@ to_tsquery('english', $1)`,
         tsQuery,
       );
       if (matchingIds.length === 0) {
@@ -94,11 +105,10 @@ export async function skillRoutes(app: FastifyInstance) {
     const pv = validate(NameParamSchema, request.params);
     if (!pv.success) return reply.status(400).send({ error: pv.error });
 
-    const skill = await prisma.skill.findFirst({
-      where: {
-        name: pv.data.name,
-        visibility: 'public', // Only public skills are accessible without auth
-      },
+    const userId = await optionalAuthenticate(request);
+
+    const skill = await prisma.skill.findUnique({
+      where: { name: pv.data.name },
       include: {
         author: { select: { id: true, username: true, displayName: true } },
         category: { select: { id: true, name: true, slug: true } },
@@ -113,6 +123,19 @@ export async function skillRoutes(app: FastifyInstance) {
     });
 
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
+
+    // Visibility check
+    if (skill.visibility === 'private' && skill.authorId !== userId) {
+      return reply.status(404).send({ error: 'Skill not found' });
+    }
+    if (skill.visibility === 'team' && skill.teamId) {
+      if (!userId) return reply.status(404).send({ error: 'Skill not found' });
+      const membership = await prisma.teamMember.findUnique({
+        where: { teamId_userId: { teamId: skill.teamId, userId } },
+      });
+      if (!membership) return reply.status(404).send({ error: 'Skill not found' });
+    }
+
     return formatSkill(skill);
   });
 
