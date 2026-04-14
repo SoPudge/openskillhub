@@ -209,10 +209,10 @@ cd frontend && pnpm dev &
 ## 开发路线
 
 - [x] **Phase 1** — 核心脚手架 + 上传→存储→下载完整链路
-- [x] **Phase 2 (部分)** — 用户认证、API Key、Zod 校验、Rate Limiting
+- [x] **Phase 2** — 用户认证、API Key、登录/注册页面、Dashboard
 - [x] **Phase 3** — PG 全文搜索 + 搜索筛选 UI + 分类导航页
 - [x] **Phase 4** — check-updates、下载统计 API、SVG 趋势图、作者面板
-- [x] **Phase 5 (部分)** — 团队 CRUD、成员管理 (owner/admin/member)
+- [x] **Phase 5** — 团队 CRUD、成员管理、可见性访问控制 (public/team/private)、团队页面
 - [ ] **Phase 6** — 多 Agent 安装路径适配完善
 - [ ] **Phase 7** — S3 存储、Docker 镜像、CI/CD
 

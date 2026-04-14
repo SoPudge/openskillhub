@@ -35,7 +35,9 @@ openskillhub/
 │   │       └── validation.ts # 15 个 Zod schema + validate() helper
 │   └── prisma/           # schema + migrations + seed
 ├── frontend/             # Next.js 前端 (port 3000)
-│   └── src/app/          # 3 页面: 首页 / 列表 / 详情(含版本历史+安装指南)
+│   └── src/
+│       ├── app/          # 10 页面: 首页/列表/详情/分类/作者/团队/登录/注册/Dashboard
+│       └── lib/          # API client, AuthProvider, hooks
 ├── packages/
 │   ├── shared/           # 类型 + 常量
 │   └── local-skill/      # SKILL.md + osh.sh CLI
@@ -89,16 +91,14 @@ openskillhub/
 
 ### ✅ 已完成
 - **Phase 1 全部**: Monorepo 脚手架、shared 类型、后端 API、前端骨架、local-skill CLI、端到端链路验证
-- **Phase 2 部分**: 用户注册/登录 API、API Key 管理、认证中间件、所有权校验
-- **Phase 3 完成**: 分类/标签/筛选、**PG 全文搜索**、**搜索筛选 UI**(分类下拉+Agent+排序+标签)、**分类导航页**、首页分类区
-- **Phase 4 完成**: check-updates API、local-skill update/rollback、**下载统计 API**、**SVG 趋势图**(30天/90天/26周/12月)、**作者面板**(`/authors/[username]`)
-- **Phase 5 部分**: **团队 CRUD API + 成员管理** (owner/admin/member 角色)
-- **安全加固**: JWT 强制校验、路径穿越增强、YAML DoS 防护、注册校验、下载原子性、N+1 修复、优雅退出、**@fastify/rate-limit (3 级限速)**、**Zod 请求校验 (15 个 schema)**
-- **前端**: 技能详情页重写 + 下载趋势图表 + 搜索筛选 UI + 分类页 + 作者面板
+- **Phase 2 全部**: 用户注册/登录 API、API Key 管理、认证中间件、所有权校验、**Web 登录/注册页面** (AuthProvider + HeaderNav)、**用户 Dashboard** (技能列表 + API Key 管理 + 统计)
+- **Phase 3 全部**: 分类/标签/筛选、**PG 全文搜索**、**搜索筛选 UI**(分类下拉+Agent+排序+标签)、**分类导航页**、首页分类区
+- **Phase 4 全部**: check-updates API、local-skill update/rollback、**下载统计 API**、**SVG 趋势图**(30天/90天/26周/12月)、**作者面板**(`/authors/[username]`)
+- **Phase 5 全部**: 团队 CRUD API + 成员管理、**可见性访问控制** (public/team/private, optionalAuthenticate)、**团队页面** (`/teams/[slug]`)
+- **安全加固**: JWT 强制校验、路径穿越增强、YAML DoS 防护、注册校验、下载原子性、N+1 修复、优雅退出、**@fastify/rate-limit (3 级限速)**、**Zod 请求校验 (15 个 schema)**、**FTS 注入防护**、**trustProxy**、**团队角色升级保护**、**前端 API 超时控制**
+- **前端 (10 页面)**: 首页、技能列表(筛选)、技能详情(图表)、分类导航、作者面板、团队页面、登录、注册、Dashboard
 
 ### 🔶 下一步待做
-- Phase 2: Web 登录/注册页面、用户 Dashboard
-- Phase 5: 技能可见性 (public/team/private) 访问控制、团队页面 (Web)
 - Phase 6: 多 Agent 适配完善 (OpenClaw/Claude Code/Cursor 安装路径)
 - Phase 7: S3 存储、Docker 镜像、CI/CD
 

@@ -647,15 +647,15 @@ metadata:
 - 支持 semver 预发布版本号
 - Prisma 进程优雅退出
 
-### Phase 2: 用户体系 (User System) 🔶 部分完成
+### Phase 2: 用户体系 (User System) ✅ 完成
 
 > **目标: 注册用户可以发布和管理自己的技能**
 
 - [x] 用户注册/登录 API (bcrypt + JWT)
 - [x] API Key 管理 (创建/列出/删除)
 - [x] 认证中间件 (JWT + API Key 双模式)
-- [ ] Web 登录/注册页面
-- [ ] 用户 Dashboard (我的技能列表)
+- [x] Web 登录/注册页面 (AuthProvider + HeaderNav + 表单验证)
+- [x] 用户 Dashboard (我的技能列表 + API Key 管理 + 统计卡片)
 - [x] 技能所有权校验 (仅作者可编辑/删除)
 - [x] local-skill 支持 `config` 和 `publish` 命令
 
@@ -684,15 +684,15 @@ metadata:
 - [x] Web 统计图表 (SVG 柱状图 + Agent 分布比例条，30天/90天/26周/12月切换)
 - [x] 技能作者数据面板 (`/authors/[username]`: 技能数/下载量/Agent 统计)
 
-### Phase 5: 团队与可见性 (Team) 🔶 部分完成
+### Phase 5: 团队与可见性 (Team) ✅ 完成
 
 > **目标: 支持团队协作和私有技能**
 
 - [x] 团队创建/管理 (CRUD API: POST/GET/PATCH/DELETE /teams)
 - [x] 团队成员角色 (owner/admin/member) + 权限校验
-- [ ] 技能可见性: public / team / private (schema 已支持 visibility 字段)
-- [ ] 可见性访问控制中间件
-- [ ] 团队页面 (Web)
+- [x] 技能可见性: public / team / private (optionalAuthenticate + Prisma OR 查询)
+- [x] 可见性访问控制 (列表/详情/FTS 均支持认证用户权限)
+- [x] 团队页面 (Web) — `/teams/[slug]` 成员列表 + 团队技能
 - [ ] 评分 & 评论系统 (后续考虑)
 
 ### Phase 6: 多 Agent 支持与完善 (Multi-Agent)
