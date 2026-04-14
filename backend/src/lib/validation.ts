@@ -44,6 +44,7 @@ export const SkillListQuerySchema = z.object({
   category: z.string().max(64).optional(),
   tag: z.string().max(200).optional(),
   agent: z.string().optional(),
+  author: z.string().max(64).optional(),
   sort: z.enum(['downloads', 'updated', 'name', 'created']).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),

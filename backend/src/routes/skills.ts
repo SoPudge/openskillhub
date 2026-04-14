@@ -9,13 +9,17 @@ export async function skillRoutes(app: FastifyInstance) {
   app.get('/', async (request, reply) => {
     const v = validate(SkillListQuerySchema, request.query);
     if (!v.success) return reply.status(400).send({ error: v.error });
-    const { q, category, tag, agent, sort, page, limit } = v.data;
+    const { q, category, tag, agent, author, sort, page, limit } = v.data;
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {};
 
     // Enforce public visibility for unauthenticated requests
     where.visibility = 'public';
+
+    if (author) {
+      where.author = { username: author };
+    }
 
     if (category) {
       where.category = { slug: category };

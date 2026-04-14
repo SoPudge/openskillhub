@@ -1,5 +1,8 @@
 import { apiFetch } from '@/lib/api';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
+import Link from 'next/link';
+import DownloadChart from './DownloadChart';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -71,9 +74,9 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ na
           )}
         </div>
         <p style={{ color: '#666', marginTop: '0.25rem' }}>
-          by <strong>@{skill.author.username}</strong>
+          by <Link href={`/authors/${skill.author.username}`} style={{ fontWeight: 'bold' }}>@{skill.author.username}</Link>
           {skill.license && <> · {skill.license}</>}
-          {skill.category && <> · {skill.category.name}</>}
+          {skill.category && <> · <Link href={`/skills?category=${skill.category.slug}`}>{skill.category.name}</Link></>}
         </p>
         <p style={{ marginTop: '0.75rem', fontSize: '1.05rem' }}>{skill.description}</p>
       </div>
@@ -261,6 +264,14 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ na
           ))}
         </div>
       )}
+
+      {/* ── Download Stats Chart ── */}
+      <div style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+        <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>下载趋势</h2>
+        <Suspense fallback={<div style={{ color: '#999' }}>加载统计...</div>}>
+          <DownloadChart skillName={skill.name} />
+        </Suspense>
+      </div>
 
       {/* ── Footer Stats ── */}
       <div style={{ marginTop: '2rem', padding: '1rem', background: '#f8f8f8', borderRadius: '8px', fontSize: '0.85rem', color: '#666' }}>
