@@ -16,6 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               OpenSkillHub
             </a>
             <a href="/skills">Skills</a>
+            <a href="/categories">分类</a>
           </nav>
         </header>
         <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
