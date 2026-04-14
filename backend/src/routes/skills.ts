@@ -146,7 +146,20 @@ export async function skillRoutes(app: FastifyInstance) {
 
     const v = validate(SkillCreateSchema, request.body);
     if (!v.success) return reply.status(400).send({ error: v.error });
-    const { name, displayName, description, categoryId, visibility, homepageUrl, license, tags } = v.data;
+    const { name, displayName, description, categoryId, teamId, visibility, homepageUrl, license, tags } = v.data;
+
+    // Validate team membership if teamId provided
+    if (teamId) {
+      const membership = await prisma.teamMember.findUnique({
+        where: { teamId_userId: { teamId, userId } },
+      });
+      if (!membership) return reply.status(403).send({ error: 'Not a member of this team' });
+    }
+
+    // Validate visibility + teamId combination
+    if (visibility === 'team' && !teamId) {
+      return reply.status(400).send({ error: 'teamId is required for team visibility' });
+    }
 
     const existing = await prisma.skill.findUnique({ where: { name } });
     if (existing) {
@@ -160,6 +173,7 @@ export async function skillRoutes(app: FastifyInstance) {
         description,
         authorId: userId,
         categoryId,
+        teamId,
         visibility: visibility || 'public',
         homepageUrl,
         license,

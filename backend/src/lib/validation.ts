@@ -24,6 +24,7 @@ export const SkillCreateSchema = z.object({
   displayName: z.string().min(1).max(128),
   description: z.string().min(1).max(5000),
   categoryId: z.string().uuid().optional(),
+  teamId: z.string().uuid().optional(),
   visibility: z.enum(VISIBILITY_TYPES).optional(),
   homepageUrl: z.string().url().max(512).optional().or(z.literal('')),
   license: z.string().max(64).optional(),
