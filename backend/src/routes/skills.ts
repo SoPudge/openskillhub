@@ -37,7 +37,11 @@ export async function skillRoutes(app: FastifyInstance) {
     // Full-text search: use PG tsvector when q is provided
     if (q) {
       // Convert user query to tsquery (prefix matching with :*)
-      const tsQuery = q.trim().split(/\s+/).map((w) => `${w}:*`).join(' & ');
+      // Sanitize input: strip non-alphanumeric chars to prevent tsquery injection
+      const tsQuery = q.trim().split(/\s+/).map((w) => w.replace(/[^\w-]/g, '')).filter(Boolean).map((w) => `${w}:*`).join(' & ');
+      if (!tsQuery) {
+        return { data: [], total: 0, page, limit, totalPages: 0 };
+      }
       const matchingIds = await prisma.$queryRawUnsafe<{ id: string }[]>(
         `SELECT id FROM skills WHERE search_vector @@ to_tsquery('english', $1) AND visibility = 'public'`,
         tsQuery,
@@ -52,6 +56,7 @@ export async function skillRoutes(app: FastifyInstance) {
     if (sort === 'downloads') orderBy = { downloadCount: 'desc' };
     else if (sort === 'updated') orderBy = { updatedAt: 'desc' };
     else if (sort === 'name') orderBy = { name: 'asc' };
+    else if (sort === 'created') orderBy = { createdAt: 'asc' };
 
     const [skills, total] = await Promise.all([
       prisma.skill.findMany({

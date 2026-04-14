@@ -4,7 +4,9 @@ import { validate, NameParamSchema, StatsQuerySchema } from '../lib/validation.j
 
 export async function statsRoutes(app: FastifyInstance) {
   // Download stats for a skill
-  app.get('/:name/stats', async (request, reply) => {
+  app.get('/:name/stats', {
+    config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
     const pv = validate(NameParamSchema, request.params);
     if (!pv.success) return reply.status(400).send({ error: pv.error });
 

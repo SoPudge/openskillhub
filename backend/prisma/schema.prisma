@@ -119,6 +119,7 @@ model Skill {
   @@index([visibility])
   @@index([authorId])
   @@index([categoryId])
+  @@index([downloadCount])
   @@map("skills")
 }
 

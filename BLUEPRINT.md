@@ -659,7 +659,7 @@ metadata:
 - [x] 技能所有权校验 (仅作者可编辑/删除)
 - [x] local-skill 支持 `config` 和 `publish` 命令
 
-### Phase 3: 发现与分发 (Discovery) 🔶 部分完成
+### Phase 3: 发现与分发 (Discovery) ✅ 完成
 
 > **目标: 用户能高效找到需要的技能**
 
@@ -668,11 +668,11 @@ metadata:
 - [x] 全文搜索 (PG tsvector + GIN 索引 + 加权搜索 + 前缀匹配)
 - [x] 按 Agent 类型筛选
 - [x] 排序 (下载量 / 最新 / 更新时间)
-- [ ] Web 搜索/筛选 UI (基础列表已有，筛选 UI 待完善)
-- [x] 首页热门/最新推荐
-- [ ] 分类导航页面
+- [x] Web 搜索/筛选 UI (分类下拉 + Agent 筛选 + 排序 + 标签点选 + 活跃筛选指示)
+- [x] 首页热门/最新推荐 (含分类导航区)
+- [x] 分类导航页面 (`/categories` 卡片网格 + 图标 + 技能计数)
 
-### Phase 4: 版本与生命周期 (Lifecycle) 🔶 部分完成
+### Phase 4: 版本与生命周期 (Lifecycle) ✅ 完成
 
 > **目标: 完成技能的全生命周期管理**
 
@@ -681,8 +681,8 @@ metadata:
 - [x] local-skill rollback 命令 (降级到指定版本)
 - [x] 下载统计 API (`/skills/:name/stats?period=day|week|month&days=N` + 按 Agent 分组)
 - [x] 技能详情页版本历史 & changelog (前端已实现)
-- [ ] Web 统计图表 (下载趋势)
-- [ ] 技能作者数据面板
+- [x] Web 统计图表 (SVG 柱状图 + Agent 分布比例条，30天/90天/26周/12月切换)
+- [x] 技能作者数据面板 (`/authors/[username]`: 技能数/下载量/Agent 统计)
 
 ### Phase 5: 团队与可见性 (Team) 🔶 部分完成
 

@@ -131,6 +131,11 @@ export async function teamRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: 'Insufficient permissions' });
     }
 
+    // Only owner can assign admin role
+    if (v.data.role === 'admin' && membership.role !== 'owner') {
+      return reply.status(403).send({ error: 'Only the owner can assign admin role' });
+    }
+
     const targetUser = await prisma.user.findUnique({ where: { username: v.data.username } });
     if (!targetUser) return reply.status(404).send({ error: 'User not found' });
 

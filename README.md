@@ -210,8 +210,8 @@ cd frontend && pnpm dev &
 
 - [x] **Phase 1** — 核心脚手架 + 上传→存储→下载完整链路
 - [x] **Phase 2 (部分)** — 用户认证、API Key、Zod 校验、Rate Limiting
-- [x] **Phase 3 (部分)** — PG 全文搜索 (tsvector + GIN)、分类/标签/筛选、首页推荐
-- [x] **Phase 4 (部分)** — check-updates API、下载统计 API (天/周/月 + 按 Agent 分组)
+- [x] **Phase 3** — PG 全文搜索 + 搜索筛选 UI + 分类导航页
+- [x] **Phase 4** — check-updates、下载统计 API、SVG 趋势图、作者面板
 - [x] **Phase 5 (部分)** — 团队 CRUD、成员管理 (owner/admin/member)
 - [ ] **Phase 6** — 多 Agent 安装路径适配完善
 - [ ] **Phase 7** — S3 存储、Docker 镜像、CI/CD

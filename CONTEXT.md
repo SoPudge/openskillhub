@@ -90,16 +90,14 @@ openskillhub/
 ### ✅ 已完成
 - **Phase 1 全部**: Monorepo 脚手架、shared 类型、后端 API、前端骨架、local-skill CLI、端到端链路验证
 - **Phase 2 部分**: 用户注册/登录 API、API Key 管理、认证中间件、所有权校验
-- **Phase 3 部分**: 分类 (8 个种子)、标签系统、Agent 筛选、排序、首页推荐、**PG 全文搜索 (tsvector + GIN + 触发器)**
-- **Phase 4 部分**: check-updates API、local-skill update/rollback 命令、**下载统计 API (天/周/月 + 按 Agent 分组)**
-- **Phase 5 部分**: **团队 CRUD API + 成员管理 (owner/admin/member 角色)**
+- **Phase 3 完成**: 分类/标签/筛选、**PG 全文搜索**、**搜索筛选 UI**(分类下拉+Agent+排序+标签)、**分类导航页**、首页分类区
+- **Phase 4 完成**: check-updates API、local-skill update/rollback、**下载统计 API**、**SVG 趋势图**(30天/90天/26周/12月)、**作者面板**(`/authors/[username]`)
+- **Phase 5 部分**: **团队 CRUD API + 成员管理** (owner/admin/member 角色)
 - **安全加固**: JWT 强制校验、路径穿越增强、YAML DoS 防护、注册校验、下载原子性、N+1 修复、优雅退出、**@fastify/rate-limit (3 级限速)**、**Zod 请求校验 (15 个 schema)**
-- **前端**: 技能详情页重写 (版本历史 + per-agent 下载 + 自然语言安装指南 + CLI 命令)
+- **前端**: 技能详情页重写 + 下载趋势图表 + 搜索筛选 UI + 分类页 + 作者面板
 
 ### 🔶 下一步待做
 - Phase 2: Web 登录/注册页面、用户 Dashboard
-- Phase 3: 搜索筛选 UI 完善、分类导航页
-- Phase 4: Web 统计图表 (下载趋势)、作者数据面板
 - Phase 5: 技能可见性 (public/team/private) 访问控制、团队页面 (Web)
 - Phase 6: 多 Agent 适配完善 (OpenClaw/Claude Code/Cursor 安装路径)
 - Phase 7: S3 存储、Docker 镜像、CI/CD
