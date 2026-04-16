@@ -3,40 +3,9 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import DownloadChart from './DownloadChart';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-
-const AGENT_LABELS: Record<string, string> = {
-  opencode: 'OpenCode',
-  openclaw: 'OpenClaw',
-  'claude-code': 'Claude Code',
-  cursor: 'Cursor',
-  goose: 'Goose',
-  amp: 'Amp',
-};
-
-interface SkillDetail {
-  id: string;
-  name: string;
-  displayName: string;
-  description: string;
-  author: { username: string; displayName?: string };
-  category?: { name: string; slug: string };
-  visibility: string;
-  homepageUrl?: string;
-  license?: string;
-  downloadCount: number;
-  tags?: { name: string; slug: string }[];
-  versions: {
-    id: string;
-    version: string;
-    changelog?: string;
-    createdAt: string;
-    packages: { agentType: string; fileSize: number; checksumSha256: string }[];
-  }[];
-  createdAt: string;
-  updatedAt: string;
-}
+import { AGENT_LABELS } from '@openskillhub/shared';
+import { API_BASE } from '@/lib/constants';
+import type { SkillWithMeta } from '@/lib/types';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -49,16 +18,16 @@ function formatBytes(bytes: number): string {
 export default async function SkillDetailPage({ params }: { params: Promise<{ name: string }> }) {
   const { name } = await params;
 
-  let skill: SkillDetail;
+  let skill: SkillWithMeta;
   try {
-    skill = await apiFetch<SkillDetail>(`/skills/${name}`);
+    skill = await apiFetch<SkillWithMeta>(`/skills/${name}`);
   } catch {
     notFound();
   }
 
-  const latestVersion = skill.versions[0];
+  const latestVersion = skill.versions?.[0];
   const allAgents = [
-    ...new Set(skill.versions.flatMap((v) => v.packages.map((p) => p.agentType))),
+    ...new Set(skill.versions?.flatMap((v) => v.packages.map((p) => p.agentType)) ?? []),
   ];
 
   return (
@@ -196,7 +165,7 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ na
 
       {/* ── Versions ── */}
       <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>版本历史</h2>
-      {skill.versions.length === 0 ? (
+      {!skill.versions?.length
         <p style={{ color: '#999' }}>暂无版本发布。</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

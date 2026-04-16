@@ -2,27 +2,11 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
+import type { Tag } from '@openskillhub/shared';
+import { AGENT_LABELS } from '@openskillhub/shared';
+import type { CategoryWithCount } from '@/lib/types';
 
-interface Category {
-  slug: string;
-  name: string;
-  description?: string;
-  _count: { skills: number };
-}
-
-interface Tag {
-  slug: string;
-  name: string;
-}
-
-const AGENT_OPTIONS = [
-  { value: 'opencode', label: 'OpenCode' },
-  { value: 'openclaw', label: 'OpenClaw' },
-  { value: 'claude-code', label: 'Claude Code' },
-  { value: 'cursor', label: 'Cursor' },
-  { value: 'goose', label: 'Goose' },
-  { value: 'amp', label: 'Amp' },
-];
+const AGENT_OPTIONS = Object.entries(AGENT_LABELS).map(([value, label]) => ({ value, label }));
 
 const SORT_OPTIONS = [
   { value: '', label: '默认排序' },
@@ -36,7 +20,7 @@ export default function SkillFilters({
   categories,
   tags,
 }: {
-  categories: Category[];
+  categories: CategoryWithCount[];
   tags: Tag[];
 }) {
   const router = useRouter();

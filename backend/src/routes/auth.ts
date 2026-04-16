@@ -132,6 +132,47 @@ export async function authRoutes(app: FastifyInstance) {
 
 // ─── Auth Helper ────────────────────────────────────────
 
+type ResolveResult =
+  | { userId: string; error?: undefined }
+  | { userId?: undefined; error: string };
+
+/**
+ * Core credential resolver — extracts userId from JWT or API Key header.
+ * Returns { userId } on success, or { error } describing the failure reason.
+ */
+async function resolveCredentials(
+  headers: Record<string, string | string[] | undefined>,
+): Promise<ResolveResult> {
+  const authHeader = headers.authorization;
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    try {
+      const payload = jwt.verify(authHeader.slice(7), JWT_SECRET) as { sub: string };
+      return { userId: payload.sub };
+    } catch {
+      return { error: 'Invalid token' };
+    }
+  }
+
+  const apiKeyHeader = headers['x-api-key'];
+  if (typeof apiKeyHeader === 'string') {
+    const keys = await prisma.apiKey.findMany({
+      where: { keyPrefix: apiKeyHeader.slice(0, 8) },
+    });
+    for (const key of keys) {
+      if (await bcrypt.compare(apiKeyHeader, key.keyHash)) {
+        await prisma.apiKey.update({
+          where: { id: key.id },
+          data: { lastUsedAt: new Date() },
+        });
+        return { userId: key.userId };
+      }
+    }
+    return { error: 'Invalid API key' };
+  }
+
+  return { error: 'Authentication required' };
+}
+
 /**
  * Optional authentication — returns userId if valid credentials present, null otherwise.
  * Does NOT send 401; callers decide how to handle unauthenticated requests.
@@ -139,70 +180,16 @@ export async function authRoutes(app: FastifyInstance) {
 export async function optionalAuthenticate(
   request: { headers: Record<string, string | string[] | undefined> },
 ): Promise<string | null> {
-  const authHeader = request.headers.authorization;
-  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
-    try {
-      const payload = jwt.verify(authHeader.slice(7), JWT_SECRET) as { sub: string };
-      return payload.sub;
-    } catch {
-      return null;
-    }
-  }
-
-  const apiKeyHeader = request.headers['x-api-key'];
-  if (typeof apiKeyHeader === 'string') {
-    const keys = await prisma.apiKey.findMany({
-      where: { keyPrefix: apiKeyHeader.slice(0, 8) },
-    });
-    for (const key of keys) {
-      if (await bcrypt.compare(apiKeyHeader, key.keyHash)) {
-        await prisma.apiKey.update({
-          where: { id: key.id },
-          data: { lastUsedAt: new Date() },
-        });
-        return key.userId;
-      }
-    }
-  }
-
-  return null;
+  const result = await resolveCredentials(request.headers);
+  return result.userId ?? null;
 }
 
 export async function authenticate(
   request: { headers: Record<string, string | string[] | undefined> },
   reply: { status: (code: number) => { send: (body: unknown) => unknown } },
 ): Promise<string | null> {
-  // Try JWT first
-  const authHeader = request.headers.authorization;
-  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
-    try {
-      const payload = jwt.verify(authHeader.slice(7), JWT_SECRET) as { sub: string };
-      return payload.sub;
-    } catch {
-      reply.status(401).send({ error: 'Invalid token' });
-      return null;
-    }
-  }
-
-  // Try API Key
-  const apiKeyHeader = request.headers['x-api-key'];
-  if (typeof apiKeyHeader === 'string') {
-    const keys = await prisma.apiKey.findMany({
-      where: { keyPrefix: apiKeyHeader.slice(0, 8) },
-    });
-    for (const key of keys) {
-      if (await bcrypt.compare(apiKeyHeader, key.keyHash)) {
-        await prisma.apiKey.update({
-          where: { id: key.id },
-          data: { lastUsedAt: new Date() },
-        });
-        return key.userId;
-      }
-    }
-    reply.status(401).send({ error: 'Invalid API key' });
-    return null;
-  }
-
-  reply.status(401).send({ error: 'Authentication required' });
+  const result = await resolveCredentials(request.headers);
+  if (result.userId) return result.userId;
+  reply.status(401).send({ error: result.error });
   return null;
 }

@@ -219,7 +219,7 @@ cd frontend && pnpm dev &
 ### 安全加固
 
 - [x] `@fastify/rate-limit` — 全局 100 req/min，登录 10/15min，上传 10/hour
-- [x] `zod` 请求校验 — 15 个 schema，覆盖所有路由
+- [x] `zod` 请求校验 — 18 个 schema，覆盖所有路由
 - [x] JWT_SECRET 强制 ENV，不含默认值
 - [x] 路径穿越/YAML DoS/zip 炸弹防护
 - [x] 下载计数 `$transaction` 原子操作

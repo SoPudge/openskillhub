@@ -1,29 +1,43 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { authenticate } from './auth.js';
-import { validate, VersionCreateSchema, NameParamSchema, NameVersionParamSchema } from '../lib/validation.js';
+import { validate, VersionCreateSchema, NameParamSchema, NameVersionParamSchema, PaginationSchema } from '../lib/validation.js';
 
 export async function versionRoutes(app: FastifyInstance) {
   // List versions for a skill
   app.get('/:name/versions', async (request, reply) => {
     const pv = validate(NameParamSchema, request.params);
     if (!pv.success) return reply.status(400).send({ error: pv.error });
+    const qv = validate(PaginationSchema, request.query);
+    if (!qv.success) return reply.status(400).send({ error: qv.error });
+    const { page, limit } = qv.data;
 
     const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
 
-    const versions = await prisma.skillVersion.findMany({
-      where: { skillId: skill.id },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        packages: { select: { agentType: true, fileSize: true } },
-      },
-    });
+    const [versions, total] = await Promise.all([
+      prisma.skillVersion.findMany({
+        where: { skillId: skill.id },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          packages: { select: { agentType: true, fileSize: true } },
+        },
+      }),
+      prisma.skillVersion.count({ where: { skillId: skill.id } }),
+    ]);
 
-    return versions.map((v) => ({
-      ...v,
-      packages: v.packages.map((p) => ({ ...p, fileSize: Number(p.fileSize) })),
-    }));
+    return {
+      data: versions.map((v) => ({
+        ...v,
+        packages: v.packages.map((p) => ({ ...p, fileSize: Number(p.fileSize) })),
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   });
 
   // Create a new version

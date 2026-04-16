@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+import { API_BASE } from './constants.js';
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const controller = new AbortController();

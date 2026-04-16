@@ -104,7 +104,7 @@ model Skill {
   visibility    String   @default("public") @db.VarChar(10)
   homepageUrl   String?  @map("homepage_url")
   license       String?  @db.VarChar(64)
-  downloadCount Int      @default(0) @map("download_count")
+  downloadCount BigInt   @default(0) @map("download_count")
   searchVector  Unsupported("tsvector")? @map("search_vector")
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
@@ -143,7 +143,7 @@ model SkillPackage {
   skillVersionId   String   @map("skill_version_id") @db.Uuid
   agentType        String   @map("agent_type") @db.VarChar(32)
   filePath         String   @map("file_path")
-  fileSize         Int      @map("file_size")
+  fileSize         BigInt   @map("file_size")
   checksumSha256   String   @map("checksum_sha256") @db.VarChar(64)
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz()
 

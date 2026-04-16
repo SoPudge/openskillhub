@@ -1,13 +1,7 @@
 import { apiFetch } from '@/lib/api';
-import type { PaginatedResponse, Skill } from '@openskillhub/shared';
+import type { PaginatedResponse } from '@openskillhub/shared';
+import type { SkillWithMeta } from '@/lib/types';
 import Link from 'next/link';
-
-interface SkillWithMeta extends Skill {
-  author: { username: string; displayName?: string };
-  category?: { name: string; slug: string };
-  tags?: { name: string; slug: string }[];
-  versions?: { version: string; packages: { agentType: string }[] }[];
-}
 
 export default async function AuthorPage({
   params,

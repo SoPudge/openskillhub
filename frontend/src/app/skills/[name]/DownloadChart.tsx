@@ -1,17 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { AGENT_LABELS } from '@openskillhub/shared';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-
-const AGENT_LABELS: Record<string, string> = {
-  opencode: 'OpenCode',
-  openclaw: 'OpenClaw',
-  'claude-code': 'Claude Code',
-  cursor: 'Cursor',
-  goose: 'Goose',
-  amp: 'Amp',
-};
+import { API_BASE } from '@/lib/constants';
 
 const AGENT_COLORS: Record<string, string> = {
   opencode: '#0070f3',

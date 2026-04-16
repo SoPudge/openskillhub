@@ -1,10 +1,7 @@
 import { apiFetch } from '@/lib/api';
-import type { Category, PaginatedResponse, Skill } from '@openskillhub/shared';
+import type { PaginatedResponse, Skill } from '@openskillhub/shared';
+import type { CategoryWithCount } from '@/lib/types';
 import Link from 'next/link';
-
-interface CategoryWithCount extends Category {
-  _count: { skills: number };
-}
 
 const CATEGORY_ICONS: Record<string, string> = {
   'dev-workflow': '⚙️',

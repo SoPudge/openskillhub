@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+import { API_BASE } from '@/lib/constants';
 
 interface Skill {
   id: string;

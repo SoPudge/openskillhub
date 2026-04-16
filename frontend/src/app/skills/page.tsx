@@ -1,12 +1,9 @@
 import { apiFetch } from '@/lib/api';
-import type { Category, PaginatedResponse, Skill, Tag } from '@openskillhub/shared';
+import type { PaginatedResponse, Skill, Tag } from '@openskillhub/shared';
+import type { CategoryWithCount } from '@/lib/types';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import SkillFilters from './SkillFilters';
-
-interface CategoryWithCount extends Category {
-  _count: { skills: number };
-}
 
 export default async function SkillsPage({
   searchParams,

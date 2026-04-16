@@ -38,6 +38,7 @@ export const SkillUpdateSchema = z.object({
   visibility: z.enum(VISIBILITY_TYPES).optional(),
   homepageUrl: z.string().url().max(512).optional().or(z.literal('')),
   license: z.string().max(64).optional(),
+  tags: z.array(z.string().max(64)).max(20).optional(),
 });
 
 export const SkillListQuerySchema = z.object({
@@ -87,6 +88,12 @@ export const StatsQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(365).optional().default(30),
 });
 
+// ─── Pagination ─────────────────────────────────────────
+export const PaginationSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
 // ─── Params ─────────────────────────────────────────────
 export const NameParamSchema = z.object({
   name: z.string().min(1).max(64),
@@ -105,6 +112,15 @@ export const NameVersionAgentParamSchema = z.object({
 
 export const IdParamSchema = z.object({
   id: z.string().uuid(),
+});
+
+export const SlugParamSchema = z.object({
+  slug: z.string().min(2).max(64),
+});
+
+export const SlugMemberParamSchema = z.object({
+  slug: z.string().min(2).max(64),
+  username: z.string().min(2).max(64),
 });
 
 // ─── Helper ─────────────────────────────────────────────

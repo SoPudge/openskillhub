@@ -37,7 +37,7 @@ openskillhub/
 ├── frontend/             # Next.js 前端 (port 3000)
 │   └── src/
 │       ├── app/          # 10 页面: 首页/列表/详情/分类/作者/团队/登录/注册/Dashboard
-│       └── lib/          # API client, AuthProvider, hooks
+│       └── lib/          # API client, AuthProvider, hooks, constants, types
 ├── packages/
 │   ├── shared/           # 类型 + 常量
 │   └── local-skill/      # SKILL.md + osh.sh CLI
@@ -87,7 +87,7 @@ openskillhub/
 | POST | /teams/:slug/members | 添加成员 (owner/admin) |
 | DELETE | /teams/:slug/members/:username | 移除成员 (owner/admin/自己离开) |
 
-## 当前进度 (最后更新: 2026-04-14)
+## 当前进度 (最后更新: 2026-04-15)
 
 ### ✅ 已完成
 - **Phase 1 全部**: Monorepo 脚手架、shared 类型、后端 API、前端骨架、local-skill CLI、端到端链路验证
@@ -97,8 +97,12 @@ openskillhub/
 - **Phase 5 全部**: 团队 CRUD API + 成员管理、**可见性访问控制** (public/team/private, optionalAuthenticate)、**团队页面** (`/teams/[slug]`)、技能创建支持 teamId + 成员校验
 - **安全加固**: JWT 强制校验、路径穿越增强、YAML DoS 防护、注册校验、下载原子性、N+1 修复、优雅退出、**@fastify/rate-limit (4 级限速: 全局/登录/上传/统计)**、**Zod 请求校验 (15 个 schema)**、**FTS 注入防护**、**trustProxy**、**团队角色升级保护**、**前端 API 超时控制**、**downloadCount 索引**
 - **前端 (10 页面)**: 首页、技能列表(筛选)、技能详情(图表)、分类导航、作者面板、团队页面、登录、注册、Dashboard
+- **代码质量优化 (2026-04-15)**:
+  - 后端: 认证逻辑抽取 `resolveCredentials()` 消除重复、`USER_SELECT` 常量统一用户字段选择、技能删除时 storage 文件清理、版本/成员列表分页 (`PaginationSchema`)、PATCH 技能支持 tags 更新、teams.ts 全面 Zod 校验 (`SlugParamSchema`)、`downloadCount`/`fileSize` 改 BigInt (待迁移)
+  - 前端: `API_BASE` 常量提取至 `lib/constants.ts`、`CategoryWithCount`/`SkillWithMeta`/`TeamDetail` 类型整合至 `lib/types.ts`、`AGENT_LABELS` 移入 shared 包统一引用、`SkillFilters` 使用 `AGENT_LABELS` 生成选项
 
 ### 🔶 下一步待做
+- **Prisma 迁移**: `downloadCount`/`fileSize` BigInt 变更尚未生成 migration，需执行 `pnpm --filter backend prisma migrate dev`
 - Phase 6: 多 Agent 适配完善 (OpenClaw/Claude Code/Cursor 安装路径)
 - Phase 7: S3 存储、Docker 镜像、CI/CD
 
@@ -108,6 +112,7 @@ openskillhub/
 - 前端 `tsconfig.json` 需显式 `baseUrl: "."` 覆盖 monorepo 基础配置
 - 远端 `NEXT_PUBLIC_API_URL` 和 `CORS_ORIGIN` 需设为 `http://192.168.20.199:3001/api/v1` 和 `http://192.168.20.199:3000`（已配置）
 - 远端多个后端进程残留时需 `pkill -f "tsx.*app.ts"` 清理后重启
+- `downloadCount` / `fileSize` BigInt 迁移待执行 (schema 已改，migration 未创建)
 
 ### 测试数据
 - **admin 账号**: admin@openskillhub.dev / admin12345

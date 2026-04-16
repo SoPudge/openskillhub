@@ -735,7 +735,7 @@ metadata:
 - [ ] 源码部署文档 (环境变量 + systemd/pm2 配置)
 - [x] 环境变量管理 & 配置优化 (启动校验已实现)
 - [x] Rate limiting (`@fastify/rate-limit`: 全局 100/min，登录 10/15min，上传 10/hour)
-- [x] Zod 请求校验 (15 个 schema，覆盖所有路由 body/params/query)
+- [x] Zod 请求校验 (18 个 schema，覆盖所有路由 body/params/query，含 PaginationSchema、SlugParamSchema)
 - [x] 输入验证加固 (zip 路径穿越、YAML DoS、注册校验、10MB 上限)
 - [ ] CI/CD 流水线
 - [ ] 监控 & 日志

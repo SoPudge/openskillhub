@@ -1,8 +1,11 @@
 import type { FastifyInstance } from 'fastify';
-import { prisma } from '../lib/prisma.js';
+import { prisma, USER_SELECT } from '../lib/prisma.js';
+import { createStorage } from '../storage/index.js';
 import { authenticate, optionalAuthenticate } from './auth.js';
 import { AGENT_TYPES } from '@openskillhub/shared';
 import { validate, SkillCreateSchema, SkillUpdateSchema, SkillListQuerySchema, CheckUpdatesSchema, NameParamSchema } from '../lib/validation.js';
+
+const storage = createStorage();
 
 export async function skillRoutes(app: FastifyInstance) {
   // List / Search skills
@@ -76,7 +79,7 @@ export async function skillRoutes(app: FastifyInstance) {
         skip,
         take: limit,
         include: {
-          author: { select: { id: true, username: true, displayName: true } },
+          author: { select: USER_SELECT },
           category: { select: { id: true, name: true, slug: true } },
           tags: { include: { tag: true } },
           versions: {
@@ -110,7 +113,7 @@ export async function skillRoutes(app: FastifyInstance) {
     const skill = await prisma.skill.findUnique({
       where: { name: pv.data.name },
       include: {
-        author: { select: { id: true, username: true, displayName: true } },
+        author: { select: USER_SELECT },
         category: { select: { id: true, name: true, slug: true } },
         tags: { include: { tag: true } },
         versions: {
@@ -194,7 +197,7 @@ export async function skillRoutes(app: FastifyInstance) {
           : undefined,
       },
       include: {
-        author: { select: { id: true, username: true, displayName: true } },
+        author: { select: USER_SELECT },
         tags: { include: { tag: true } },
       },
     });
@@ -216,11 +219,33 @@ export async function skillRoutes(app: FastifyInstance) {
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
     if (skill.authorId !== userId) return reply.status(403).send({ error: 'Not the skill author' });
 
+    const { tags, ...updateData } = v.data;
+
     const updated = await prisma.skill.update({
       where: { id: skill.id },
-      data: v.data,
+      data: {
+        ...updateData,
+        ...(tags !== undefined
+          ? {
+              tags: {
+                deleteMany: {},
+                create: await Promise.all(
+                  tags.map(async (tagName) => {
+                    const slug = tagName.toLowerCase().replace(/\s+/g, '-');
+                    const tag = await prisma.tag.upsert({
+                      where: { slug },
+                      update: {},
+                      create: { name: tagName, slug },
+                    });
+                    return { tagId: tag.id };
+                  }),
+                ),
+              },
+            }
+          : {}),
+      },
       include: {
-        author: { select: { id: true, username: true, displayName: true } },
+        author: { select: USER_SELECT },
         tags: { include: { tag: true } },
       },
     });
@@ -240,7 +265,17 @@ export async function skillRoutes(app: FastifyInstance) {
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
     if (skill.authorId !== userId) return reply.status(403).send({ error: 'Not the skill author' });
 
+    // Collect storage paths before cascading delete removes DB records
+    const packages = await prisma.skillPackage.findMany({
+      where: { skillVersion: { skillId: skill.id } },
+      select: { filePath: true },
+    });
+
     await prisma.skill.delete({ where: { id: skill.id } });
+
+    // Best-effort cleanup of stored files (don't fail the request if storage delete fails)
+    await Promise.allSettled(packages.map((pkg) => storage.delete(pkg.filePath)));
+
     return reply.status(204).send();
   });
 
@@ -287,5 +322,14 @@ function formatSkill(skill: Record<string, unknown>) {
   const s = { ...skill } as Record<string, unknown>;
   s.downloadCount = Number(s.downloadCount ?? 0);
   s.tags = Array.isArray(s.tags) ? s.tags.map((t: Record<string, unknown>) => (t as Record<string, unknown>).tag ?? t) : undefined;
+  // Convert BigInt fileSize in nested versions → packages
+  if (Array.isArray(s.versions)) {
+    s.versions = (s.versions as Record<string, unknown>[]).map((v) => ({
+      ...v,
+      packages: Array.isArray((v as Record<string, unknown>).packages)
+        ? ((v as Record<string, unknown>).packages as Record<string, unknown>[]).map((p) => ({ ...p, fileSize: Number((p as Record<string, unknown>).fileSize ?? 0) }))
+        : (v as Record<string, unknown>).packages,
+    }));
+  }
   return s;
 }

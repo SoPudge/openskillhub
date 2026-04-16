@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import { prisma } from '../lib/prisma.js';
+import { prisma, USER_SELECT } from '../lib/prisma.js';
 import { authenticate } from './auth.js';
-import { validate, TeamCreateSchema, TeamUpdateSchema, TeamMemberAddSchema, NameParamSchema } from '../lib/validation.js';
+import { validate, TeamCreateSchema, TeamUpdateSchema, TeamMemberAddSchema, SlugParamSchema, SlugMemberParamSchema, PaginationSchema } from '../lib/validation.js';
 
 export async function teamRoutes(app: FastifyInstance) {
   // Create team
@@ -24,7 +24,7 @@ export async function teamRoutes(app: FastifyInstance) {
         members: { create: { userId, role: 'owner' } },
       },
       include: {
-        owner: { select: { id: true, username: true, displayName: true } },
+        owner: { select: USER_SELECT },
         _count: { select: { members: true } },
       },
     });
@@ -40,7 +40,7 @@ export async function teamRoutes(app: FastifyInstance) {
     const teams = await prisma.team.findMany({
       where: { members: { some: { userId } } },
       include: {
-        owner: { select: { id: true, username: true, displayName: true } },
+        owner: { select: USER_SELECT },
         _count: { select: { members: true, skills: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -51,12 +51,15 @@ export async function teamRoutes(app: FastifyInstance) {
 
   // Get team by slug
   app.get('/:slug', async (request, reply) => {
+    const pv = validate(SlugParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+
     const team = await prisma.team.findUnique({
-      where: { slug: (request.params as { slug: string }).slug },
+      where: { slug: pv.data.slug },
       include: {
-        owner: { select: { id: true, username: true, displayName: true } },
+        owner: { select: USER_SELECT },
         members: {
-          include: { user: { select: { id: true, username: true, displayName: true } } },
+          include: { user: { select: USER_SELECT } },
           orderBy: { joinedAt: 'asc' },
         },
         _count: { select: { skills: true } },
@@ -72,11 +75,12 @@ export async function teamRoutes(app: FastifyInstance) {
     const userId = await authenticate(request, reply);
     if (!userId) return;
 
+    const pv = validate(SlugParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
     const v = validate(TeamUpdateSchema, request.body);
     if (!v.success) return reply.status(400).send({ error: v.error });
 
-    const slug = (request.params as { slug: string }).slug;
-    const team = await prisma.team.findUnique({ where: { slug } });
+    const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
     if (!team) return reply.status(404).send({ error: 'Team not found' });
 
     // Only owner or admin can update
@@ -100,8 +104,10 @@ export async function teamRoutes(app: FastifyInstance) {
     const userId = await authenticate(request, reply);
     if (!userId) return;
 
-    const slug = (request.params as { slug: string }).slug;
-    const team = await prisma.team.findUnique({ where: { slug } });
+    const pv = validate(SlugParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+
+    const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
     if (!team) return reply.status(404).send({ error: 'Team not found' });
     if (team.ownerId !== userId) return reply.status(403).send({ error: 'Only the owner can delete the team' });
 
@@ -116,11 +122,12 @@ export async function teamRoutes(app: FastifyInstance) {
     const userId = await authenticate(request, reply);
     if (!userId) return;
 
+    const pv = validate(SlugParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
     const v = validate(TeamMemberAddSchema, request.body);
     if (!v.success) return reply.status(400).send({ error: v.error });
 
-    const slug = (request.params as { slug: string }).slug;
-    const team = await prisma.team.findUnique({ where: { slug } });
+    const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
     if (!team) return reply.status(404).send({ error: 'Team not found' });
 
     // Only owner or admin can add members
@@ -146,7 +153,7 @@ export async function teamRoutes(app: FastifyInstance) {
 
     const member = await prisma.teamMember.create({
       data: { teamId: team.id, userId: targetUser.id, role: v.data.role },
-      include: { user: { select: { id: true, username: true, displayName: true } } },
+      include: { user: { select: USER_SELECT } },
     });
 
     return reply.status(201).send(member);
@@ -157,8 +164,10 @@ export async function teamRoutes(app: FastifyInstance) {
     const userId = await authenticate(request, reply);
     if (!userId) return;
 
-    const { slug, username } = request.params as { slug: string; username: string };
-    const team = await prisma.team.findUnique({ where: { slug } });
+    const pv = validate(SlugMemberParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+
+    const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
     if (!team) return reply.status(404).send({ error: 'Team not found' });
 
     // Only owner or admin can remove; members can remove themselves
@@ -166,7 +175,7 @@ export async function teamRoutes(app: FastifyInstance) {
       where: { teamId_userId: { teamId: team.id, userId } },
     });
 
-    const targetUser = await prisma.user.findUnique({ where: { username } });
+    const targetUser = await prisma.user.findUnique({ where: { username: pv.data.username } });
     if (!targetUser) return reply.status(404).send({ error: 'User not found' });
 
     const isSelf = targetUser.id === userId;
@@ -190,16 +199,33 @@ export async function teamRoutes(app: FastifyInstance) {
 
   // List members
   app.get('/:slug/members', async (request, reply) => {
-    const slug = (request.params as { slug: string }).slug;
-    const team = await prisma.team.findUnique({ where: { slug } });
+    const pv = validate(SlugParamSchema, request.params);
+    if (!pv.success) return reply.status(400).send({ error: pv.error });
+
+    const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
     if (!team) return reply.status(404).send({ error: 'Team not found' });
 
-    const members = await prisma.teamMember.findMany({
-      where: { teamId: team.id },
-      include: { user: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
-      orderBy: { joinedAt: 'asc' },
-    });
+    const qv = validate(PaginationSchema, request.query);
+    if (!qv.success) return reply.status(400).send({ error: qv.error });
+    const { page, limit } = qv.data;
 
-    return members;
+    const [members, total] = await Promise.all([
+      prisma.teamMember.findMany({
+        where: { teamId: team.id },
+        include: { user: { select: { ...USER_SELECT, avatarUrl: true } } },
+        orderBy: { joinedAt: 'asc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.teamMember.count({ where: { teamId: team.id } }),
+    ]);
+
+    return {
+      data: members,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   });
 }

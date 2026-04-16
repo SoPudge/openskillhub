@@ -1,45 +1,22 @@
 import { apiFetch } from '@/lib/api';
-
-interface Team {
-  id: string;
-  name: string;
-  slug: string;
-  createdAt: string;
-  owner: { id: string; username: string; displayName?: string };
-  members: { role: string; joinedAt: string; user: { id: string; username: string; displayName?: string } }[];
-  _count: { skills: number };
-}
-
-interface Skill {
-  id: string;
-  name: string;
-  displayName: string;
-  description: string;
-  downloadCount: number;
-  versions?: { version: string; packages?: { agentType: string }[] }[];
-  tags?: { name: string; slug: string }[];
-}
-
-interface SkillsResponse {
-  data: Skill[];
-  total: number;
-}
+import type { PaginatedResponse } from '@openskillhub/shared';
+import type { TeamDetail, SkillWithMeta } from '@/lib/types';
 
 export default async function TeamPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  let team: Team;
+  let team: TeamDetail;
   try {
-    team = await apiFetch<Team>(`/teams/${slug}`);
+    team = await apiFetch<TeamDetail>(`/teams/${slug}`);
   } catch {
     return <div style={{ textAlign: 'center', padding: '4rem', color: '#999' }}>团队不存在</div>;
   }
 
-  let skills: Skill[] = [];
+  let skills: SkillWithMeta[] = [];
   try {
     // Team skills would be listed via the skills API filtered by team
     // For now, show any public skills from team members
-    const ownerSkills = await apiFetch<SkillsResponse>(`/skills?author=${team.owner.username}&limit=50`);
+    const ownerSkills = await apiFetch<PaginatedResponse<SkillWithMeta>>(`/skills?author=${team.owner.username}&limit=50`);
     skills = ownerSkills.data || [];
   } catch { /* ignore */ }
 
