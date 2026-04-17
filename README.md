@@ -184,6 +184,8 @@ Skill 的详细说明...
 
 | 变量              | 说明                          | 默认值                         |
 |-------------------|-------------------------------|-------------------------------|
+| `LOG_LEVEL`     | 日志级别 (debug/info/warn/error) | `info`                        |
+| `NODE_ENV`      | 运行环境 (production/development) | —                            |
 | `DATABASE_URL`    | PostgreSQL 连接串             | —                             |
 | `SERVER_PORT`     | 后端端口                      | `3001`                        |
 | `JWT_SECRET`      | JWT 签名密钥                  | —                             |

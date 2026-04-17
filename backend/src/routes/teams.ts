@@ -14,7 +14,10 @@ export async function teamRoutes(app: FastifyInstance) {
     const { name, slug } = v.data;
 
     const existing = await prisma.team.findUnique({ where: { slug } });
-    if (existing) return reply.status(409).send({ error: 'Team slug already taken' });
+    if (existing) {
+      request.log.warn({ userId, slug }, 'Team slug conflict');
+      return reply.status(409).send({ error: 'Team slug already taken' });
+    }
 
     const team = await prisma.team.create({
       data: {
@@ -29,6 +32,7 @@ export async function teamRoutes(app: FastifyInstance) {
       },
     });
 
+    request.log.info({ userId, teamName: name, teamSlug: slug }, 'Team created');
     return reply.status(201).send(team);
   });
 
@@ -88,6 +92,7 @@ export async function teamRoutes(app: FastifyInstance) {
       where: { teamId_userId: { teamId: team.id, userId } },
     });
     if (!membership || !['owner', 'admin'].includes(membership.role)) {
+      request.log.warn({ userId, teamSlug: pv.data.slug, action: 'update' }, 'Team update denied');
       return reply.status(403).send({ error: 'Insufficient permissions' });
     }
 
@@ -96,6 +101,7 @@ export async function teamRoutes(app: FastifyInstance) {
       data: v.data,
     });
 
+    request.log.info({ userId, teamSlug: pv.data.slug, fields: Object.keys(v.data) }, 'Team updated');
     return updated;
   });
 
@@ -109,9 +115,13 @@ export async function teamRoutes(app: FastifyInstance) {
 
     const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
     if (!team) return reply.status(404).send({ error: 'Team not found' });
-    if (team.ownerId !== userId) return reply.status(403).send({ error: 'Only the owner can delete the team' });
+    if (team.ownerId !== userId) {
+      request.log.warn({ userId, teamSlug: pv.data.slug }, 'Team delete denied: not owner');
+      return reply.status(403).send({ error: 'Only the owner can delete the team' });
+    }
 
     await prisma.team.delete({ where: { id: team.id } });
+    request.log.info({ userId, teamSlug: pv.data.slug }, 'Team deleted');
     return reply.status(204).send();
   });
 
@@ -135,11 +145,13 @@ export async function teamRoutes(app: FastifyInstance) {
       where: { teamId_userId: { teamId: team.id, userId } },
     });
     if (!membership || !['owner', 'admin'].includes(membership.role)) {
+      request.log.warn({ userId, teamSlug: pv.data.slug, action: 'addMember' }, 'Team member add denied');
       return reply.status(403).send({ error: 'Insufficient permissions' });
     }
 
     // Only owner can assign admin role
     if (v.data.role === 'admin' && membership.role !== 'owner') {
+      request.log.warn({ userId, teamSlug: pv.data.slug, targetRole: 'admin' }, 'Admin role assign denied: not owner');
       return reply.status(403).send({ error: 'Only the owner can assign admin role' });
     }
 
@@ -156,6 +168,7 @@ export async function teamRoutes(app: FastifyInstance) {
       include: { user: { select: USER_SELECT } },
     });
 
+    request.log.info({ userId, teamSlug: pv.data.slug, targetUsername: v.data.username, role: v.data.role }, 'Team member added');
     return reply.status(201).send(member);
   });
 
@@ -182,6 +195,7 @@ export async function teamRoutes(app: FastifyInstance) {
     const isAdminOrOwner = membership && ['owner', 'admin'].includes(membership.role);
 
     if (!isSelf && !isAdminOrOwner) {
+      request.log.warn({ userId, teamSlug: pv.data.slug, action: 'removeMember' }, 'Team member remove denied');
       return reply.status(403).send({ error: 'Insufficient permissions' });
     }
 
@@ -194,6 +208,7 @@ export async function teamRoutes(app: FastifyInstance) {
       where: { teamId_userId: { teamId: team.id, userId: targetUser.id } },
     });
 
+    request.log.info({ userId, teamSlug: pv.data.slug, targetUsername: pv.data.username }, 'Team member removed');
     return reply.status(204).send();
   });
 

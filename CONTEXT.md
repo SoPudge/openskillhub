@@ -87,7 +87,7 @@ openskillhub/
 | POST | /teams/:slug/members | 添加成员 (owner/admin) |
 | DELETE | /teams/:slug/members/:username | 移除成员 (owner/admin/自己离开) |
 
-## 当前进度 (最后更新: 2026-04-15)
+## 当前进度 (最后更新: 2026-04-17)
 
 ### ✅ 已完成
 - **Phase 1 全部**: Monorepo 脚手架、shared 类型、后端 API、前端骨架、local-skill CLI、端到端链路验证
@@ -95,14 +95,20 @@ openskillhub/
 - **Phase 3 全部**: 分类/标签/筛选、**PG 全文搜索**、**搜索筛选 UI**(分类下拉+Agent+排序+标签)、**分类导航页**、首页分类区
 - **Phase 4 全部**: check-updates API、local-skill update/rollback、**下载统计 API**、**SVG 趋势图**(30天/90天/26周/12月)、**作者面板**(`/authors/[username]`)
 - **Phase 5 全部**: 团队 CRUD API + 成员管理、**可见性访问控制** (public/team/private, optionalAuthenticate)、**团队页面** (`/teams/[slug]`)、技能创建支持 teamId + 成员校验
-- **安全加固**: JWT 强制校验、路径穿越增强、YAML DoS 防护、注册校验、下载原子性、N+1 修复、优雅退出、**@fastify/rate-limit (4 级限速: 全局/登录/上传/统计)**、**Zod 请求校验 (15 个 schema)**、**FTS 注入防护**、**trustProxy**、**团队角色升级保护**、**前端 API 超时控制**、**downloadCount 索引**
+- **安全加固**: JWT 强制校验、路径穿越增强、YAML DoS 防护、注册校验、下载原子性、N+1 修复、优雅退出、**@fastify/rate-limit (4 级限速: 全局/登录/上传/统计)**、**Zod 请求校验 (18 个 schema)**、**FTS 注入防护**、**trustProxy**、**团队角色升级保护**、**前端 API 超时控制**、**downloadCount 索引**
 - **前端 (10 页面)**: 首页、技能列表(筛选)、技能详情(图表)、分类导航、作者面板、团队页面、登录、注册、Dashboard
 - **代码质量优化 (2026-04-15)**:
   - 后端: 认证逻辑抽取 `resolveCredentials()` 消除重复、`USER_SELECT` 常量统一用户字段选择、技能删除时 storage 文件清理、版本/成员列表分页 (`PaginationSchema`)、PATCH 技能支持 tags 更新、teams.ts 全面 Zod 校验 (`SlugParamSchema`)、`downloadCount`/`fileSize` 改 BigInt (待迁移)
   - 前端: `API_BASE` 常量提取至 `lib/constants.ts`、`CategoryWithCount`/`SkillWithMeta`/`TeamDetail` 类型整合至 `lib/types.ts`、`AGENT_LABELS` 移入 shared 包统一引用、`SkillFilters` 使用 `AGENT_LABELS` 生成选项
+- **日志体系 (2026-04-17)**:
+  - Pino 结构化日志: 按 `LOG_LEVEL` 环境变量配置级别，开发用 pino-pretty，生产用 JSON + 敏感字段脱敏 (authorization, x-api-key)
+  - 全局错误处理: `setErrorHandler` 捕获所有未处理 5xx 并记录完整错误栈
+  - Request ID: `crypto.randomUUID()` 生成，全链路追踪
+  - 业务日志覆盖: auth (注册/登录/API Key)、skills (CRUD+权限)、packages (上传/安全检测/下载统计)、versions (创建)、teams (CRUD+成员管理)
+  - 优雅退出日志、storage 层 ENOENT 容错
 
 ### 🔶 下一步待做
-- **Prisma 迁移**: `downloadCount`/`fileSize` BigInt 变更尚未生成 migration，需执行 `pnpm --filter backend prisma migrate dev`
+- **Prisma 迁移**: `downloadCount`/`fileSize` BigInt 变更尚未生成 migration，需在远程服务器执行 `pnpm --filter backend prisma migrate dev`
 - Phase 6: 多 Agent 适配完善 (OpenClaw/Claude Code/Cursor 安装路径)
 - Phase 7: S3 存储、Docker 镜像、CI/CD
 

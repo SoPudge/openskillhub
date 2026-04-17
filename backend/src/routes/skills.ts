@@ -129,10 +129,14 @@ export async function skillRoutes(app: FastifyInstance) {
 
     // Visibility check
     if (skill.visibility === 'private' && skill.authorId !== userId) {
+      request.log.debug({ skillName: pv.data.name, visibility: 'private' }, 'Skill access denied');
       return reply.status(404).send({ error: 'Skill not found' });
     }
     if (skill.visibility === 'team' && skill.teamId) {
-      if (!userId) return reply.status(404).send({ error: 'Skill not found' });
+      if (!userId) {
+        request.log.debug({ skillName: pv.data.name, visibility: 'team' }, 'Skill access denied');
+        return reply.status(404).send({ error: 'Skill not found' });
+      }
       const membership = await prisma.teamMember.findUnique({
         where: { teamId_userId: { teamId: skill.teamId, userId } },
       });
@@ -166,6 +170,7 @@ export async function skillRoutes(app: FastifyInstance) {
 
     const existing = await prisma.skill.findUnique({ where: { name } });
     if (existing) {
+      request.log.warn({ skillName: name, userId }, 'Skill name conflict');
       return reply.status(409).send({ error: 'Skill name already taken' });
     }
 
@@ -202,6 +207,7 @@ export async function skillRoutes(app: FastifyInstance) {
       },
     });
 
+    request.log.info({ userId, skillName: name, visibility: visibility || 'public', teamId }, 'Skill created');
     return reply.status(201).send(formatSkill(skill));
   });
 
@@ -217,7 +223,10 @@ export async function skillRoutes(app: FastifyInstance) {
 
     const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
-    if (skill.authorId !== userId) return reply.status(403).send({ error: 'Not the skill author' });
+    if (skill.authorId !== userId) {
+      request.log.warn({ userId, skillName: pv.data.name }, 'Skill update denied: not author');
+      return reply.status(403).send({ error: 'Not the skill author' });
+    }
 
     const { tags, ...updateData } = v.data;
 
@@ -250,6 +259,7 @@ export async function skillRoutes(app: FastifyInstance) {
       },
     });
 
+    request.log.info({ userId, skillName: pv.data.name, fields: Object.keys(v.data) }, 'Skill updated');
     return formatSkill(updated);
   });
 
@@ -263,7 +273,10 @@ export async function skillRoutes(app: FastifyInstance) {
 
     const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
-    if (skill.authorId !== userId) return reply.status(403).send({ error: 'Not the skill author' });
+    if (skill.authorId !== userId) {
+      request.log.warn({ userId, skillName: pv.data.name }, 'Skill delete denied: not author');
+      return reply.status(403).send({ error: 'Not the skill author' });
+    }
 
     // Collect storage paths before cascading delete removes DB records
     const packages = await prisma.skillPackage.findMany({
@@ -274,8 +287,13 @@ export async function skillRoutes(app: FastifyInstance) {
     await prisma.skill.delete({ where: { id: skill.id } });
 
     // Best-effort cleanup of stored files (don't fail the request if storage delete fails)
-    await Promise.allSettled(packages.map((pkg) => storage.delete(pkg.filePath)));
+    const results = await Promise.allSettled(packages.map((pkg) => storage.delete(pkg.filePath)));
+    const failed = results.filter((r) => r.status === 'rejected');
+    if (failed.length > 0) {
+      request.log.error({ skillName: pv.data.name, failedCount: failed.length }, 'Storage cleanup partially failed');
+    }
 
+    request.log.info({ userId, skillName: pv.data.name, packageCount: packages.length }, 'Skill deleted');
     return reply.status(204).send();
   });
 

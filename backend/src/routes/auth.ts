@@ -22,6 +22,7 @@ export async function authRoutes(app: FastifyInstance) {
       where: { OR: [{ email }, { username }] },
     });
     if (existing) {
+      request.log.warn({ username, email: email.replace(/(.{2}).*(@.*)/, '$1***$2') }, 'Registration conflict');
       return reply.status(409).send({ error: 'Email or username already exists' });
     }
 
@@ -31,6 +32,7 @@ export async function authRoutes(app: FastifyInstance) {
       select: { id: true, email: true, username: true, displayName: true, createdAt: true },
     });
 
+    request.log.info({ userId: user.id, username }, 'User registered');
     const token = jwt.sign({ sub: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     return reply.status(201).send({ user, token });
   });
@@ -43,9 +45,11 @@ export async function authRoutes(app: FastifyInstance) {
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      request.log.warn({ email: email.replace(/(.{2}).*(@.*)/, '$1***$2') }, 'Login failed: invalid credentials');
       return reply.status(401).send({ error: 'Invalid credentials' });
     }
 
+    request.log.info({ userId: user.id, username: user.username }, 'User logged in');
     const token = jwt.sign({ sub: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     return {
       user: {
@@ -95,6 +99,7 @@ export async function authRoutes(app: FastifyInstance) {
       select: { id: true, name: true, keyPrefix: true, createdAt: true },
     });
 
+    request.log.info({ userId, keyPrefix, keyName: name }, 'API key created');
     // Return raw key only once
     return reply.status(201).send({ ...apiKey, key: rawKey });
   });
@@ -126,6 +131,7 @@ export async function authRoutes(app: FastifyInstance) {
     if (!apiKey) return reply.status(404).send({ error: 'API key not found' });
 
     await prisma.apiKey.delete({ where: { id: apiKey.id } });
+    request.log.info({ userId, keyId: apiKey.id, keyPrefix: apiKey.keyPrefix }, 'API key deleted');
     return reply.status(204).send();
   });
 }
@@ -133,8 +139,8 @@ export async function authRoutes(app: FastifyInstance) {
 // ─── Auth Helper ────────────────────────────────────────
 
 type ResolveResult =
-  | { userId: string; error?: undefined }
-  | { userId?: undefined; error: string };
+  | { userId: string; error?: undefined; authMethod?: undefined }
+  | { userId?: undefined; error: string; authMethod?: 'jwt' | 'apikey' };
 
 /**
  * Core credential resolver — extracts userId from JWT or API Key header.
@@ -149,7 +155,7 @@ async function resolveCredentials(
       const payload = jwt.verify(authHeader.slice(7), JWT_SECRET) as { sub: string };
       return { userId: payload.sub };
     } catch {
-      return { error: 'Invalid token' };
+      return { error: 'Invalid token', authMethod: 'jwt' as const };
     }
   }
 
@@ -160,14 +166,14 @@ async function resolveCredentials(
     });
     for (const key of keys) {
       if (await bcrypt.compare(apiKeyHeader, key.keyHash)) {
-        await prisma.apiKey.update({
+        prisma.apiKey.update({
           where: { id: key.id },
           data: { lastUsedAt: new Date() },
-        });
+        }).catch(() => { /* best-effort */ });
         return { userId: key.userId };
       }
     }
-    return { error: 'Invalid API key' };
+    return { error: 'Invalid API key', authMethod: 'apikey' as const };
   }
 
   return { error: 'Authentication required' };
@@ -185,11 +191,14 @@ export async function optionalAuthenticate(
 }
 
 export async function authenticate(
-  request: { headers: Record<string, string | string[] | undefined> },
+  request: { headers: Record<string, string | string[] | undefined>; log: { warn: (obj: Record<string, unknown>, msg: string) => void } },
   reply: { status: (code: number) => { send: (body: unknown) => unknown } },
 ): Promise<string | null> {
   const result = await resolveCredentials(request.headers);
   if (result.userId) return result.userId;
+  if (result.authMethod) {
+    request.log.warn({ method: result.authMethod }, `Auth failed: ${result.error}`);
+  }
   reply.status(401).send({ error: result.error });
   return null;
 }

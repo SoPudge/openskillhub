@@ -50,7 +50,10 @@ export async function versionRoutes(app: FastifyInstance) {
 
     const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
-    if (skill.authorId !== userId) return reply.status(403).send({ error: 'Not the skill author' });
+    if (skill.authorId !== userId) {
+      request.log.warn({ userId, skillName: pv.data.name }, 'Version create denied: not author');
+      return reply.status(403).send({ error: 'Not the skill author' });
+    }
 
     const v = validate(VersionCreateSchema, request.body);
     if (!v.success) return reply.status(400).send({ error: v.error });
@@ -60,6 +63,7 @@ export async function versionRoutes(app: FastifyInstance) {
       where: { skillId_version: { skillId: skill.id, version } },
     });
     if (existing) {
+      request.log.warn({ skillName: pv.data.name, version }, 'Version conflict: already exists');
       return reply.status(409).send({ error: 'Version already exists' });
     }
 
@@ -67,6 +71,7 @@ export async function versionRoutes(app: FastifyInstance) {
       data: { skillId: skill.id, version, changelog },
     });
 
+    request.log.info({ userId, skillName: pv.data.name, version }, 'Version created');
     return reply.status(201).send(created);
   });
 

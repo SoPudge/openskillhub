@@ -23,7 +23,10 @@ export async function packageRoutes(app: FastifyInstance) {
 
     const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
     if (!skill) return reply.status(404).send({ error: 'Skill not found' });
-    if (skill.authorId !== userId) return reply.status(403).send({ error: 'Not the skill author' });
+    if (skill.authorId !== userId) {
+      request.log.warn({ userId, skillName: pv.data.name }, 'Package upload denied: not author');
+      return reply.status(403).send({ error: 'Not the skill author' });
+    }
 
     const skillVersion = await prisma.skillVersion.findUnique({
       where: { skillId_version: { skillId: skill.id, version: pv.data.version } },
@@ -53,6 +56,7 @@ export async function packageRoutes(app: FastifyInstance) {
           entry.entryName.includes('\0') ||
           entry.entryName.includes('\\')
         ) {
+          request.log.warn({ userId, skillName: pv.data.name, path: entry.entryName }, 'Path traversal detected in zip');
           return reply.status(400).send({ error: 'Zip contains invalid path' });
         }
       }
@@ -108,6 +112,8 @@ export async function packageRoutes(app: FastifyInstance) {
         checksumSha256: checksum,
       },
     });
+
+    request.log.info({ userId, skillName: pv.data.name, version: pv.data.version, agentType, fileSize: buffer.length }, 'Package uploaded');
 
     return reply.status(201).send({
       ...pkg,
@@ -191,26 +197,30 @@ export async function packageRoutes(app: FastifyInstance) {
 async function recordDownload(
   skillId: string,
   packageId: string,
-  request: { ip?: string; headers: Record<string, string | string[] | undefined> },
+  request: { ip?: string; headers: Record<string, string | string[] | undefined>; log: { error: (obj: Record<string, unknown>, msg: string) => void; debug: (obj: Record<string, unknown>, msg: string) => void } },
 ) {
   const ipHash = createHash('sha256')
     .update(request.ip || 'unknown')
     .digest('hex');
 
-  await prisma.$transaction([
-    prisma.downloadStat.create({
-      data: {
-        skillPackageId: packageId,
-        ipHash,
-        userAgent:
-          typeof request.headers['user-agent'] === 'string'
-            ? request.headers['user-agent'].slice(0, 255)
-            : undefined,
-      },
-    }),
-    prisma.skill.update({
-      where: { id: skillId },
-      data: { downloadCount: { increment: 1 } },
-    }),
-  ]);
+  try {
+    await prisma.$transaction([
+      prisma.downloadStat.create({
+        data: {
+          skillPackageId: packageId,
+          ipHash,
+          userAgent:
+            typeof request.headers['user-agent'] === 'string'
+              ? request.headers['user-agent'].slice(0, 255)
+              : undefined,
+        },
+      }),
+      prisma.skill.update({
+        where: { id: skillId },
+        data: { downloadCount: { increment: 1 } },
+      }),
+    ]);
+  } catch (err) {
+    request.log.error({ skillId, packageId, err }, 'Failed to record download stat');
+  }
 }
