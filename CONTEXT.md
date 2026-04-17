@@ -32,7 +32,9 @@ openskillhub/
 │   │   ├── storage/      # 抽象层: local / s3
 │   │   └── lib/
 │   │       ├── prisma.ts # PrismaClient 单例
-│   │       └── validation.ts # 15 个 Zod schema + validate() helper
+│   │       ├── validation.ts # 15 个 Zod schema + validate() helper
+│   │       ├── errors.ts # AppError 类 + ErrorCode 枚举 + Prisma 错误映射
+│   │       └── helpers.ts # 共用查找/权限/格式化 helpers
 │   └── prisma/           # schema + migrations + seed
 ├── frontend/             # Next.js 前端 (port 3000)
 │   └── src/
@@ -112,6 +114,14 @@ openskillhub/
   - 全局错误处理器：AppError → `{ error, code }` 响应；Prisma P2002/P2025/P2003 自动映射；Fastify 原生错误兜底
   - 所有路由 `reply.status().send({ error })` 统一改为 `throw new AppError(statusCode, code, message)`
   - `authenticate()` 保持 null 返回模式（跨路由共用，未改为 throw）
+- **代码 DRY 重构 (2026-04-17)**:
+  - 新建 `lib/helpers.ts`: `getSkillOrThrow`, `assertSkillAuthor`, `getVersionOrThrow`, `assertTeamRole`, `upsertTags`, `slugifyTag`, `normalizeFileSize`, `formatSkill`
+  - skills.ts: 内联 tag upsert → `upsertTags()`，skill 查找+权限 → helpers，移除本地 `formatSkill`
+  - packages.ts: 两个下载 handler 合并为 `sendPackageDownload()` 共享逻辑
+  - versions.ts: skill 查找+权限+BigInt 转换 → helpers
+  - teams.ts: 重复权限检查 → `assertTeamRole()`
+  - stats.ts: 迁移到 AppError 统一错误处理
+  - 净减 ~130 行重复代码
 
 ### 🔶 下一步待做
 - **Prisma 迁移**: `downloadCount`/`fileSize` BigInt 变更尚未生成 migration，需在远程服务器执行 `pnpm --filter backend prisma migrate dev`

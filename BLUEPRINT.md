@@ -740,6 +740,7 @@ metadata:
 - [ ] CI/CD 流水线
 - [x] 监控 & 日志 (Pino 结构化日志 + 全局错误处理 + Request ID + 敏感字段脱敏 + pino-roll 日志文件轮转)
 - [x] 错误处理体系 (AppError 类 + ErrorCode 枚举 27 错误码 + Prisma 错误自动映射 + 统一 `{error, code}` 响应)
+- [x] 代码 DRY 重构 (lib/helpers.ts 共用查找/权限/格式化, 下载 handler 合并, 净减 ~130 行)
 
 ---
 
