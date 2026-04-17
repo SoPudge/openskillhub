@@ -107,6 +107,11 @@ openskillhub/
   - 业务日志覆盖: auth (注册/登录/API Key)、skills (CRUD+权限)、packages (上传/安全检测/下载统计)、versions (创建)、teams (CRUD+成员管理)
   - 优雅退出日志、storage 层 ENOENT 容错
   - 日志文件存储: pino-roll 按日轮转，写入 `<仓库>/logs/app.{日期}.log`，支持 `LOG_DIR` 环境变量自定义路径
+- **错误处理体系 (2026-04-17)**:
+  - `AppError` 类 + `ErrorCode` 枚举 (27 个错误码，按模块分组: AUTH/SKILL/VERSION/PACKAGE/TEAM/USER)
+  - 全局错误处理器：AppError → `{ error, code }` 响应；Prisma P2002/P2025/P2003 自动映射；Fastify 原生错误兜底
+  - 所有路由 `reply.status().send({ error })` 统一改为 `throw new AppError(statusCode, code, message)`
+  - `authenticate()` 保持 null 返回模式（跨路由共用，未改为 throw）
 
 ### 🔶 下一步待做
 - **Prisma 迁移**: `downloadCount`/`fileSize` BigInt 变更尚未生成 migration，需在远程服务器执行 `pnpm --filter backend prisma migrate dev`
