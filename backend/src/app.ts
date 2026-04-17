@@ -1,8 +1,10 @@
 import 'dotenv/config';
-import Fastify from 'fastify';
+import Fastify, { type FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { prisma } from './lib/prisma.js';
 import { skillRoutes } from './routes/skills.js';
 import { versionRoutes } from './routes/versions.js';
@@ -25,24 +27,50 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
+// ─── Log Directory ──────────────────────────────────────
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const LOG_DIR = process.env.LOG_DIR || resolve(__dirname, '../../logs');
+
+// Build pino transport targets
+const transportTargets: Array<{
+  target: string;
+  options: Record<string, unknown>;
+  level: string;
+}> = [
+  // File target: daily rotation
+  {
+    target: 'pino-roll',
+    options: {
+      file: resolve(LOG_DIR, 'app'),
+      frequency: 'daily',
+      dateFormat: 'yyyy-MM-dd',
+      mkdir: true,
+    },
+    level: LOG_LEVEL,
+  },
+];
+
+if (!IS_PRODUCTION) {
+  // Development: also pretty-print to console
+  transportTargets.push({
+    target: 'pino-pretty',
+    options: { colorize: true, translateTime: 'HH:MM:ss.l', ignore: 'pid,hostname' },
+    level: LOG_LEVEL,
+  });
+}
+
 const app = Fastify({
   logger: {
     level: LOG_LEVEL,
+    transport: { targets: transportTargets },
     ...(IS_PRODUCTION
       ? {
-          // Production: JSON to stdout, redact sensitive fields
           redact: {
             paths: ['req.headers.authorization', 'req.headers["x-api-key"]'],
             censor: '[REDACTED]',
           },
         }
-      : {
-          // Development: pretty print
-          transport: {
-            target: 'pino-pretty',
-            options: { colorize: true, translateTime: 'HH:MM:ss.l', ignore: 'pid,hostname' },
-          },
-        }),
+      : {}),
   },
   trustProxy: true,
   genReqId: () => crypto.randomUUID(),
@@ -69,7 +97,7 @@ await app.register(rateLimit, {
 app.get('/api/health', async () => ({ status: 'ok' }));
 
 // ─── Global Error Handler ───────────────────────────────
-app.setErrorHandler((error, request, reply) => {
+app.setErrorHandler((error: FastifyError, request, reply) => {
   const statusCode = error.statusCode ?? 500;
   if (statusCode >= 500) {
     request.log.error({ err: error, reqId: request.id }, 'Unhandled server error');

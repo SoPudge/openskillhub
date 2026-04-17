@@ -4,6 +4,7 @@ dist/
 .env
 .env.local
 storage/
+logs/
 *.tgz
 .turbo/
 coverage/
