@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { authenticate } from './auth.js';
 import { validate, VersionCreateSchema, NameParamSchema, NameVersionParamSchema, PaginationSchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
+import { getSkillOrThrow, assertSkillAuthor, getVersionOrThrow, normalizeFileSize } from '../lib/helpers.js';
 
 export async function versionRoutes(app: FastifyInstance) {
   // List versions for a skill
@@ -13,8 +14,7 @@ export async function versionRoutes(app: FastifyInstance) {
     if (!qv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, qv.error);
     const { page, limit } = qv.data;
 
-    const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
-    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
+    const skill = await getSkillOrThrow(pv.data.name);
 
     const [versions, total] = await Promise.all([
       prisma.skillVersion.findMany({
@@ -32,7 +32,7 @@ export async function versionRoutes(app: FastifyInstance) {
     return {
       data: versions.map((v) => ({
         ...v,
-        packages: v.packages.map((p) => ({ ...p, fileSize: Number(p.fileSize) })),
+        packages: v.packages.map(normalizeFileSize),
       })),
       total,
       page,
@@ -49,12 +49,8 @@ export async function versionRoutes(app: FastifyInstance) {
     const pv = validate(NameParamSchema, request.params);
     if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
-    const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
-    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
-    if (skill.authorId !== userId) {
-      request.log.warn({ userId, skillName: pv.data.name }, 'Version create denied: not author');
-      throw new AppError(403, ErrorCode.SKILL_NOT_AUTHOR, 'Not the skill author');
-    }
+    const skill = await getSkillOrThrow(pv.data.name);
+    assertSkillAuthor(skill, userId);
 
     const v = validate(VersionCreateSchema, request.body);
     if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
@@ -81,8 +77,7 @@ export async function versionRoutes(app: FastifyInstance) {
     const pv = validate(NameVersionParamSchema, request.params);
     if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
-    const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
-    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
+    const skill = await getSkillOrThrow(pv.data.name);
 
     const version = await prisma.skillVersion.findUnique({
       where: { skillId_version: { skillId: skill.id, version: pv.data.version } },
@@ -94,7 +89,7 @@ export async function versionRoutes(app: FastifyInstance) {
     if (!version) throw new AppError(404, ErrorCode.VERSION_NOT_FOUND, 'Version not found');
     return {
       ...version,
-      packages: version.packages.map((p) => ({ ...p, fileSize: Number(p.fileSize) })),
+      packages: version.packages.map(normalizeFileSize),
     };
   });
 }

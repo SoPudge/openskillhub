@@ -5,6 +5,7 @@ import { authenticate, optionalAuthenticate } from './auth.js';
 import { AGENT_TYPES } from '@openskillhub/shared';
 import { validate, SkillCreateSchema, SkillUpdateSchema, SkillListQuerySchema, CheckUpdatesSchema, NameParamSchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
+import { getSkillOrThrow, assertSkillAuthor, upsertTags, formatSkill } from '../lib/helpers.js';
 
 const storage = createStorage();
 
@@ -187,19 +188,7 @@ export async function skillRoutes(app: FastifyInstance) {
         homepageUrl,
         license,
         tags: tags?.length
-          ? {
-              create: await Promise.all(
-                tags.map(async (tagName) => {
-                  const slug = tagName.toLowerCase().replace(/\s+/g, '-');
-                  const tag = await prisma.tag.upsert({
-                    where: { slug },
-                    update: {},
-                    create: { name: tagName, slug },
-                  });
-                  return { tagId: tag.id };
-                }),
-              ),
-            }
+          ? { create: await upsertTags(tags) }
           : undefined,
       },
       include: {
@@ -222,12 +211,8 @@ export async function skillRoutes(app: FastifyInstance) {
     const v = validate(SkillUpdateSchema, request.body);
     if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
 
-    const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
-    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
-    if (skill.authorId !== userId) {
-      request.log.warn({ userId, skillName: pv.data.name }, 'Skill update denied: not author');
-      throw new AppError(403, ErrorCode.SKILL_NOT_AUTHOR, 'Not the skill author');
-    }
+    const skill = await getSkillOrThrow(pv.data.name);
+    assertSkillAuthor(skill, userId);
 
     const { tags, ...updateData } = v.data;
 
@@ -239,17 +224,7 @@ export async function skillRoutes(app: FastifyInstance) {
           ? {
               tags: {
                 deleteMany: {},
-                create: await Promise.all(
-                  tags.map(async (tagName) => {
-                    const slug = tagName.toLowerCase().replace(/\s+/g, '-');
-                    const tag = await prisma.tag.upsert({
-                      where: { slug },
-                      update: {},
-                      create: { name: tagName, slug },
-                    });
-                    return { tagId: tag.id };
-                  }),
-                ),
+                create: await upsertTags(tags),
               },
             }
           : {}),
@@ -272,12 +247,8 @@ export async function skillRoutes(app: FastifyInstance) {
     const pv = validate(NameParamSchema, request.params);
     if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
-    const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
-    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
-    if (skill.authorId !== userId) {
-      request.log.warn({ userId, skillName: pv.data.name }, 'Skill delete denied: not author');
-      throw new AppError(403, ErrorCode.SKILL_NOT_AUTHOR, 'Not the skill author');
-    }
+    const skill = await getSkillOrThrow(pv.data.name);
+    assertSkillAuthor(skill, userId);
 
     // Collect storage paths before cascading delete removes DB records
     const packages = await prisma.skillPackage.findMany({
@@ -336,19 +307,4 @@ export async function skillRoutes(app: FastifyInstance) {
   });
 }
 
-// ─── Helper ─────────────────────────────────────────────
-function formatSkill(skill: Record<string, unknown>) {
-  const s = { ...skill } as Record<string, unknown>;
-  s.downloadCount = Number(s.downloadCount ?? 0);
-  s.tags = Array.isArray(s.tags) ? s.tags.map((t: Record<string, unknown>) => (t as Record<string, unknown>).tag ?? t) : undefined;
-  // Convert BigInt fileSize in nested versions → packages
-  if (Array.isArray(s.versions)) {
-    s.versions = (s.versions as Record<string, unknown>[]).map((v) => ({
-      ...v,
-      packages: Array.isArray((v as Record<string, unknown>).packages)
-        ? ((v as Record<string, unknown>).packages as Record<string, unknown>[]).map((p) => ({ ...p, fileSize: Number((p as Record<string, unknown>).fileSize ?? 0) }))
-        : (v as Record<string, unknown>).packages,
-    }));
-  }
-  return s;
-}
+

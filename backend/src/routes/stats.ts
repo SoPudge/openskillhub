@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { validate, NameParamSchema, StatsQuerySchema } from '../lib/validation.js';
+import { AppError, ErrorCode } from '../lib/errors.js';
+import { getSkillOrThrow } from '../lib/helpers.js';
 
 export async function statsRoutes(app: FastifyInstance) {
   // Download stats for a skill
@@ -8,10 +10,10 @@ export async function statsRoutes(app: FastifyInstance) {
     config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
   }, async (request, reply) => {
     const pv = validate(NameParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
     const qv = validate(StatsQuerySchema, request.query);
-    if (!qv.success) return reply.status(400).send({ error: qv.error });
+    if (!qv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, qv.error);
 
     const { period, days } = qv.data;
 
@@ -19,7 +21,7 @@ export async function statsRoutes(app: FastifyInstance) {
       where: { name: pv.data.name },
       select: { id: true, downloadCount: true },
     });
-    if (!skill) return reply.status(404).send({ error: 'Skill not found' });
+    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
 
     const since = new Date();
     since.setDate(since.getDate() - days);

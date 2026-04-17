@@ -8,6 +8,7 @@ import { authenticate } from './auth.js';
 import { AGENT_TYPES } from '@openskillhub/shared';
 import { validate, NameVersionParamSchema, NameVersionAgentParamSchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
+import { getSkillOrThrow, assertSkillAuthor, getVersionOrThrow } from '../lib/helpers.js';
 
 const storage = createStorage();
 
@@ -22,17 +23,10 @@ export async function packageRoutes(app: FastifyInstance) {
     const pv = validate(NameVersionParamSchema, request.params);
     if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
-    const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
-    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
-    if (skill.authorId !== userId) {
-      request.log.warn({ userId, skillName: pv.data.name }, 'Package upload denied: not author');
-      throw new AppError(403, ErrorCode.SKILL_NOT_AUTHOR, 'Not the skill author');
-    }
+    const skill = await getSkillOrThrow(pv.data.name);
+    assertSkillAuthor(skill, userId);
 
-    const skillVersion = await prisma.skillVersion.findUnique({
-      where: { skillId_version: { skillId: skill.id, version: pv.data.version } },
-    });
-    if (!skillVersion) throw new AppError(404, ErrorCode.VERSION_NOT_FOUND, 'Version not found');
+    const skillVersion = await getVersionOrThrow(skill.id, pv.data.version);
 
     const data = await request.file();
     if (!data) throw new AppError(400, ErrorCode.VALIDATION_FAILED, 'No file uploaded');
@@ -129,33 +123,10 @@ export async function packageRoutes(app: FastifyInstance) {
     if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
     const { name, version, agent } = pv.data;
 
-    const skill = await prisma.skill.findUnique({ where: { name } });
-    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
+    const skill = await getSkillOrThrow(name);
+    const skillVersion = await getVersionOrThrow(skill.id, version);
 
-    const skillVersion = await prisma.skillVersion.findUnique({
-      where: { skillId_version: { skillId: skill.id, version } },
-    });
-    if (!skillVersion) throw new AppError(404, ErrorCode.VERSION_NOT_FOUND, 'Version not found');
-
-    const pkg = await prisma.skillPackage.findUnique({
-      where: {
-        skillVersionId_agentType: {
-          skillVersionId: skillVersion.id,
-          agentType: agent,
-        },
-      },
-    });
-    if (!pkg) throw new AppError(404, ErrorCode.PACKAGE_NOT_FOUND, 'Package not found');
-
-    const buffer = await storage.get(pkg.filePath);
-
-    await recordDownload(skill.id, pkg.id, request);
-
-    return reply
-      .header('Content-Type', 'application/zip')
-      .header('Content-Disposition', `attachment; filename="${name}-${version}-${agent}.zip"`)
-      .header('X-Checksum-SHA256', pkg.checksumSha256)
-      .send(buffer);
+    return sendPackageDownload(skill, skillVersion, agent, request, reply);
   });
 
   // Download latest version package
@@ -164,35 +135,38 @@ export async function packageRoutes(app: FastifyInstance) {
     if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
     const { name, agent } = pv.data;
 
-    const skill = await prisma.skill.findUnique({ where: { name } });
-    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
-
+    const skill = await getSkillOrThrow(name);
     const latestVersion = await prisma.skillVersion.findFirst({
       where: { skillId: skill.id },
       orderBy: { createdAt: 'desc' },
     });
     if (!latestVersion) throw new AppError(404, ErrorCode.VERSION_NOT_FOUND, 'No versions found');
 
+    return sendPackageDownload(skill, latestVersion, agent, request, reply);
+  });
+
+  // ─── Shared download logic ──────────────────────────
+  async function sendPackageDownload(
+    skill: { id: string; name: string },
+    version: { id: string; version: string },
+    agent: string,
+    request: Parameters<Parameters<typeof app.get>[1]>[0],
+    reply: Parameters<Parameters<typeof app.get>[1]>[1],
+  ) {
     const pkg = await prisma.skillPackage.findUnique({
-      where: {
-        skillVersionId_agentType: {
-          skillVersionId: latestVersion.id,
-          agentType: agent,
-        },
-      },
+      where: { skillVersionId_agentType: { skillVersionId: version.id, agentType: agent } },
     });
-    if (!pkg) throw new AppError(404, ErrorCode.PACKAGE_NOT_FOUND, 'Package not found for this agent type');
+    if (!pkg) throw new AppError(404, ErrorCode.PACKAGE_NOT_FOUND, 'Package not found');
 
     const buffer = await storage.get(pkg.filePath);
-
     await recordDownload(skill.id, pkg.id, request);
 
     return reply
       .header('Content-Type', 'application/zip')
-      .header('Content-Disposition', `attachment; filename="${name}-${latestVersion.version}-${agent}.zip"`)
+      .header('Content-Disposition', `attachment; filename="${skill.name}-${version.version}-${agent}.zip"`)
       .header('X-Checksum-SHA256', pkg.checksumSha256)
       .send(buffer);
-  });
+  }
 }
 
 // ─── Helper ─────────────────────────────────────────────

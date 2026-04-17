@@ -3,6 +3,7 @@ import { prisma, USER_SELECT } from '../lib/prisma.js';
 import { authenticate } from './auth.js';
 import { validate, TeamCreateSchema, TeamUpdateSchema, TeamMemberAddSchema, SlugParamSchema, SlugMemberParamSchema, PaginationSchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
+import { assertTeamRole } from '../lib/helpers.js';
 
 export async function teamRoutes(app: FastifyInstance) {
   // Create team
@@ -89,13 +90,7 @@ export async function teamRoutes(app: FastifyInstance) {
     if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
 
     // Only owner or admin can update
-    const membership = await prisma.teamMember.findUnique({
-      where: { teamId_userId: { teamId: team.id, userId } },
-    });
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      request.log.warn({ userId, teamSlug: pv.data.slug, action: 'update' }, 'Team update denied');
-      throw new AppError(403, ErrorCode.TEAM_NOT_ADMIN, 'Insufficient permissions');
-    }
+    await assertTeamRole(team.id, userId, ['owner', 'admin'], ErrorCode.TEAM_NOT_ADMIN, 'Insufficient permissions');
 
     const updated = await prisma.team.update({
       where: { id: team.id },
@@ -142,13 +137,7 @@ export async function teamRoutes(app: FastifyInstance) {
     if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
 
     // Only owner or admin can add members
-    const membership = await prisma.teamMember.findUnique({
-      where: { teamId_userId: { teamId: team.id, userId } },
-    });
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      request.log.warn({ userId, teamSlug: pv.data.slug, action: 'addMember' }, 'Team member add denied');
-      throw new AppError(403, ErrorCode.TEAM_NOT_ADMIN, 'Insufficient permissions');
-    }
+    const membership = await assertTeamRole(team.id, userId, ['owner', 'admin'], ErrorCode.TEAM_NOT_ADMIN, 'Insufficient permissions');
 
     // Only owner can assign admin role
     if (v.data.role === 'admin' && membership.role !== 'owner') {
