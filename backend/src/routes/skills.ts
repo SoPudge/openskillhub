@@ -4,6 +4,7 @@ import { createStorage } from '../storage/index.js';
 import { authenticate, optionalAuthenticate } from './auth.js';
 import { AGENT_TYPES } from '@openskillhub/shared';
 import { validate, SkillCreateSchema, SkillUpdateSchema, SkillListQuerySchema, CheckUpdatesSchema, NameParamSchema } from '../lib/validation.js';
+import { AppError, ErrorCode } from '../lib/errors.js';
 
 const storage = createStorage();
 
@@ -11,7 +12,7 @@ export async function skillRoutes(app: FastifyInstance) {
   // List / Search skills
   app.get('/', async (request, reply) => {
     const v = validate(SkillListQuerySchema, request.query);
-    if (!v.success) return reply.status(400).send({ error: v.error });
+    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
     const { q, category, tag, agent, author, sort, page, limit } = v.data;
     const skip = (page - 1) * limit;
 
@@ -106,7 +107,7 @@ export async function skillRoutes(app: FastifyInstance) {
   // Get skill by name
   app.get('/:name', async (request, reply) => {
     const pv = validate(NameParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
     const userId = await optionalAuthenticate(request);
 
@@ -125,22 +126,22 @@ export async function skillRoutes(app: FastifyInstance) {
       },
     });
 
-    if (!skill) return reply.status(404).send({ error: 'Skill not found' });
+    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
 
     // Visibility check
     if (skill.visibility === 'private' && skill.authorId !== userId) {
       request.log.debug({ skillName: pv.data.name, visibility: 'private' }, 'Skill access denied');
-      return reply.status(404).send({ error: 'Skill not found' });
+      throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
     }
     if (skill.visibility === 'team' && skill.teamId) {
       if (!userId) {
         request.log.debug({ skillName: pv.data.name, visibility: 'team' }, 'Skill access denied');
-        return reply.status(404).send({ error: 'Skill not found' });
+        throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
       }
       const membership = await prisma.teamMember.findUnique({
         where: { teamId_userId: { teamId: skill.teamId, userId } },
       });
-      if (!membership) return reply.status(404).send({ error: 'Skill not found' });
+      if (!membership) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
     }
 
     return formatSkill(skill);
@@ -152,7 +153,7 @@ export async function skillRoutes(app: FastifyInstance) {
     if (!userId) return;
 
     const v = validate(SkillCreateSchema, request.body);
-    if (!v.success) return reply.status(400).send({ error: v.error });
+    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
     const { name, displayName, description, categoryId, teamId, visibility, homepageUrl, license, tags } = v.data;
 
     // Validate team membership if teamId provided
@@ -160,18 +161,18 @@ export async function skillRoutes(app: FastifyInstance) {
       const membership = await prisma.teamMember.findUnique({
         where: { teamId_userId: { teamId, userId } },
       });
-      if (!membership) return reply.status(403).send({ error: 'Not a member of this team' });
+      if (!membership) throw new AppError(403, ErrorCode.TEAM_NOT_MEMBER, 'Not a member of this team');
     }
 
     // Validate visibility + teamId combination
     if (visibility === 'team' && !teamId) {
-      return reply.status(400).send({ error: 'teamId is required for team visibility' });
+      throw new AppError(400, ErrorCode.VALIDATION_FAILED, 'teamId is required for team visibility');
     }
 
     const existing = await prisma.skill.findUnique({ where: { name } });
     if (existing) {
       request.log.warn({ skillName: name, userId }, 'Skill name conflict');
-      return reply.status(409).send({ error: 'Skill name already taken' });
+      throw new AppError(409, ErrorCode.SKILL_NAME_TAKEN, 'Skill name already taken');
     }
 
     const skill = await prisma.skill.create({
@@ -217,15 +218,15 @@ export async function skillRoutes(app: FastifyInstance) {
     if (!userId) return;
 
     const pv = validate(NameParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
     const v = validate(SkillUpdateSchema, request.body);
-    if (!v.success) return reply.status(400).send({ error: v.error });
+    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
 
     const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
-    if (!skill) return reply.status(404).send({ error: 'Skill not found' });
+    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
     if (skill.authorId !== userId) {
       request.log.warn({ userId, skillName: pv.data.name }, 'Skill update denied: not author');
-      return reply.status(403).send({ error: 'Not the skill author' });
+      throw new AppError(403, ErrorCode.SKILL_NOT_AUTHOR, 'Not the skill author');
     }
 
     const { tags, ...updateData } = v.data;
@@ -269,13 +270,13 @@ export async function skillRoutes(app: FastifyInstance) {
     if (!userId) return;
 
     const pv = validate(NameParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
     const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
-    if (!skill) return reply.status(404).send({ error: 'Skill not found' });
+    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
     if (skill.authorId !== userId) {
       request.log.warn({ userId, skillName: pv.data.name }, 'Skill delete denied: not author');
-      return reply.status(403).send({ error: 'Not the skill author' });
+      throw new AppError(403, ErrorCode.SKILL_NOT_AUTHOR, 'Not the skill author');
     }
 
     // Collect storage paths before cascading delete removes DB records
@@ -300,7 +301,7 @@ export async function skillRoutes(app: FastifyInstance) {
   // Check updates (batch) — uses single query instead of N+1
   app.post('/check-updates', async (request, reply) => {
     const v = validate(CheckUpdatesSchema, request.body);
-    if (!v.success) return reply.status(400).send({ error: v.error });
+    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
     const { skills: installed } = v.data;
 
     const skillNames = installed.map((s) => s.name);

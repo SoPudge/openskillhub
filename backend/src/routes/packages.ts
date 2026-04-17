@@ -7,6 +7,7 @@ import { createStorage } from '../storage/index.js';
 import { authenticate } from './auth.js';
 import { AGENT_TYPES } from '@openskillhub/shared';
 import { validate, NameVersionParamSchema, NameVersionAgentParamSchema } from '../lib/validation.js';
+import { AppError, ErrorCode } from '../lib/errors.js';
 
 const storage = createStorage();
 
@@ -19,26 +20,26 @@ export async function packageRoutes(app: FastifyInstance) {
     if (!userId) return;
 
     const pv = validate(NameVersionParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
     const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
-    if (!skill) return reply.status(404).send({ error: 'Skill not found' });
+    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
     if (skill.authorId !== userId) {
       request.log.warn({ userId, skillName: pv.data.name }, 'Package upload denied: not author');
-      return reply.status(403).send({ error: 'Not the skill author' });
+      throw new AppError(403, ErrorCode.SKILL_NOT_AUTHOR, 'Not the skill author');
     }
 
     const skillVersion = await prisma.skillVersion.findUnique({
       where: { skillId_version: { skillId: skill.id, version: pv.data.version } },
     });
-    if (!skillVersion) return reply.status(404).send({ error: 'Version not found' });
+    if (!skillVersion) throw new AppError(404, ErrorCode.VERSION_NOT_FOUND, 'Version not found');
 
     const data = await request.file();
-    if (!data) return reply.status(400).send({ error: 'No file uploaded' });
+    if (!data) throw new AppError(400, ErrorCode.VALIDATION_FAILED, 'No file uploaded');
 
     const agentType = (data.fields['agent_type'] as { value?: string } | undefined)?.value;
     if (!agentType || !AGENT_TYPES.includes(agentType as (typeof AGENT_TYPES)[number])) {
-      return reply.status(400).send({ error: `Invalid agent_type. Must be one of: ${AGENT_TYPES.join(', ')}` });
+      throw new AppError(400, ErrorCode.VALIDATION_FAILED, `Invalid agent_type. Must be one of: ${AGENT_TYPES.join(', ')}`);
     }
 
     const buffer = await data.toBuffer();
@@ -57,7 +58,7 @@ export async function packageRoutes(app: FastifyInstance) {
           entry.entryName.includes('\\')
         ) {
           request.log.warn({ userId, skillName: pv.data.name, path: entry.entryName }, 'Path traversal detected in zip');
-          return reply.status(400).send({ error: 'Zip contains invalid path' });
+          throw new AppError(400, ErrorCode.PACKAGE_PATH_TRAVERSAL, 'Zip contains invalid path');
         }
       }
 
@@ -66,22 +67,23 @@ export async function packageRoutes(app: FastifyInstance) {
         (e) => e.entryName.endsWith('SKILL.md') && !e.isDirectory,
       );
       if (!skillMd) {
-        return reply.status(400).send({ error: 'Zip must contain SKILL.md' });
+        throw new AppError(400, ErrorCode.PACKAGE_NO_SKILL_MD, 'Zip must contain SKILL.md');
       }
 
       // Validate frontmatter
       const content = skillMd.getData().toString('utf8');
       const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
       if (!fmMatch) {
-        return reply.status(400).send({ error: 'SKILL.md must have YAML frontmatter' });
+        throw new AppError(400, ErrorCode.VALIDATION_FAILED, 'SKILL.md must have YAML frontmatter');
       }
 
       const frontmatter = parseYaml(fmMatch[1], { maxAliasCount: 100 });
       if (!frontmatter.name || !frontmatter.description) {
-        return reply.status(400).send({ error: 'SKILL.md frontmatter must have name and description' });
+        throw new AppError(400, ErrorCode.VALIDATION_FAILED, 'SKILL.md frontmatter must have name and description');
       }
     } catch (err) {
-      return reply.status(400).send({ error: 'Invalid zip file' });
+      if (err instanceof AppError) throw err;
+      throw new AppError(400, ErrorCode.PACKAGE_INVALID_ZIP, 'Invalid zip file');
     }
 
     // Dedup check
@@ -94,7 +96,7 @@ export async function packageRoutes(app: FastifyInstance) {
       },
     });
     if (existing) {
-      return reply.status(409).send({ error: 'Package for this agent type already exists' });
+      throw new AppError(409, ErrorCode.PACKAGE_CONFLICT, 'Package for this agent type already exists');
     }
 
     // Store
@@ -124,16 +126,16 @@ export async function packageRoutes(app: FastifyInstance) {
   // Download specific version package
   app.get('/:name/versions/:version/packages/:agent', async (request, reply) => {
     const pv = validate(NameVersionAgentParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
     const { name, version, agent } = pv.data;
 
     const skill = await prisma.skill.findUnique({ where: { name } });
-    if (!skill) return reply.status(404).send({ error: 'Skill not found' });
+    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
 
     const skillVersion = await prisma.skillVersion.findUnique({
       where: { skillId_version: { skillId: skill.id, version } },
     });
-    if (!skillVersion) return reply.status(404).send({ error: 'Version not found' });
+    if (!skillVersion) throw new AppError(404, ErrorCode.VERSION_NOT_FOUND, 'Version not found');
 
     const pkg = await prisma.skillPackage.findUnique({
       where: {
@@ -143,7 +145,7 @@ export async function packageRoutes(app: FastifyInstance) {
         },
       },
     });
-    if (!pkg) return reply.status(404).send({ error: 'Package not found' });
+    if (!pkg) throw new AppError(404, ErrorCode.PACKAGE_NOT_FOUND, 'Package not found');
 
     const buffer = await storage.get(pkg.filePath);
 
@@ -159,17 +161,17 @@ export async function packageRoutes(app: FastifyInstance) {
   // Download latest version package
   app.get('/:name/latest/:agent', async (request, reply) => {
     const pv = validate(NameVersionAgentParamSchema.pick({ name: true, agent: true }), request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
     const { name, agent } = pv.data;
 
     const skill = await prisma.skill.findUnique({ where: { name } });
-    if (!skill) return reply.status(404).send({ error: 'Skill not found' });
+    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
 
     const latestVersion = await prisma.skillVersion.findFirst({
       where: { skillId: skill.id },
       orderBy: { createdAt: 'desc' },
     });
-    if (!latestVersion) return reply.status(404).send({ error: 'No versions found' });
+    if (!latestVersion) throw new AppError(404, ErrorCode.VERSION_NOT_FOUND, 'No versions found');
 
     const pkg = await prisma.skillPackage.findUnique({
       where: {
@@ -179,7 +181,7 @@ export async function packageRoutes(app: FastifyInstance) {
         },
       },
     });
-    if (!pkg) return reply.status(404).send({ error: 'Package not found for this agent type' });
+    if (!pkg) throw new AppError(404, ErrorCode.PACKAGE_NOT_FOUND, 'Package not found for this agent type');
 
     const buffer = await storage.get(pkg.filePath);
 

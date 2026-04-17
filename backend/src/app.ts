@@ -14,6 +14,8 @@ import { authRoutes } from './routes/auth.js';
 import { teamRoutes } from './routes/teams.js';
 import { statsRoutes } from './routes/stats.js';
 
+import { AppError, mapPrismaError, ErrorCode } from './lib/errors.js';
+
 // ─── Startup Validation ─────────────────────────────────
 const REQUIRED_ENV = ['DATABASE_URL', 'JWT_SECRET'] as const;
 for (const key of REQUIRED_ENV) {
@@ -97,8 +99,28 @@ await app.register(rateLimit, {
 app.get('/api/health', async () => ({ status: 'ok' }));
 
 // ─── Global Error Handler ───────────────────────────────
-app.setErrorHandler((error: FastifyError, request, reply) => {
-  const statusCode = error.statusCode ?? 500;
+app.setErrorHandler((error: FastifyError | AppError | Error, request, reply) => {
+  // AppError: known business errors
+  if (error instanceof AppError) {
+    if (error.statusCode >= 500) {
+      request.log.error({ err: error, code: error.code, reqId: request.id }, error.message);
+    } else {
+      request.log.warn({ statusCode: error.statusCode, code: error.code, reqId: request.id }, error.message);
+    }
+    return reply.status(error.statusCode).send({ error: error.message, code: error.code });
+  }
+
+  // Prisma errors
+  if ((error as any).code && (error as any).code.startsWith?.('P')) {
+    const mapped = mapPrismaError(error as any);
+    if (mapped) {
+      request.log.warn({ statusCode: mapped.statusCode, code: mapped.code, reqId: request.id }, mapped.message);
+      return reply.status(mapped.statusCode).send({ error: mapped.message, code: mapped.code });
+    }
+  }
+
+  // Fastify/other errors
+  const statusCode = (error as FastifyError).statusCode ?? 500;
   if (statusCode >= 500) {
     request.log.error({ err: error, reqId: request.id }, 'Unhandled server error');
   } else if (statusCode >= 400) {
@@ -106,6 +128,7 @@ app.setErrorHandler((error: FastifyError, request, reply) => {
   }
   reply.status(statusCode).send({
     error: statusCode >= 500 ? 'Internal server error' : error.message,
+    code: statusCode >= 500 ? ErrorCode.INTERNAL_ERROR : undefined,
   });
 });
 

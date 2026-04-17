@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { randomBytes } from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { validate, RegisterSchema, LoginSchema, ApiKeyCreateSchema, IdParamSchema } from '../lib/validation.js';
+import { AppError, ErrorCode } from '../lib/errors.js';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -15,7 +16,7 @@ export async function authRoutes(app: FastifyInstance) {
   // Register
   app.post('/register', { ...authRateLimit }, async (request, reply) => {
     const v = validate(RegisterSchema, request.body);
-    if (!v.success) return reply.status(400).send({ error: v.error });
+    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
     const { email, username, password, displayName } = v.data;
 
     const existing = await prisma.user.findFirst({
@@ -23,7 +24,7 @@ export async function authRoutes(app: FastifyInstance) {
     });
     if (existing) {
       request.log.warn({ username, email: email.replace(/(.{2}).*(@.*)/, '$1***$2') }, 'Registration conflict');
-      return reply.status(409).send({ error: 'Email or username already exists' });
+      throw new AppError(409, ErrorCode.AUTH_USER_CONFLICT, 'Email or username already exists');
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -40,13 +41,13 @@ export async function authRoutes(app: FastifyInstance) {
   // Login
   app.post('/login', { ...authRateLimit }, async (request, reply) => {
     const v = validate(LoginSchema, request.body);
-    if (!v.success) return reply.status(400).send({ error: v.error });
+    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
     const { email, password } = v.data;
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       request.log.warn({ email: email.replace(/(.{2}).*(@.*)/, '$1***$2') }, 'Login failed: invalid credentials');
-      return reply.status(401).send({ error: 'Invalid credentials' });
+      throw new AppError(401, ErrorCode.AUTH_INVALID_CREDENTIALS, 'Invalid credentials');
     }
 
     request.log.info({ userId: user.id, username: user.username }, 'User logged in');
@@ -78,7 +79,7 @@ export async function authRoutes(app: FastifyInstance) {
         createdAt: true,
       },
     });
-    if (!user) return reply.status(404).send({ error: 'User not found' });
+    if (!user) throw new AppError(404, ErrorCode.USER_NOT_FOUND, 'User not found');
     return user;
   });
 
@@ -88,7 +89,7 @@ export async function authRoutes(app: FastifyInstance) {
     if (!userId) return;
 
     const v = validate(ApiKeyCreateSchema, request.body);
-    if (!v.success) return reply.status(400).send({ error: v.error });
+    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
     const { name } = v.data;
     const rawKey = `osh_${randomBytes(24).toString('hex')}`;
     const keyPrefix = rawKey.slice(0, 8);
@@ -123,12 +124,12 @@ export async function authRoutes(app: FastifyInstance) {
     if (!userId) return;
 
     const pv = validate(IdParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
     const apiKey = await prisma.apiKey.findFirst({
       where: { id: pv.data.id, userId },
     });
-    if (!apiKey) return reply.status(404).send({ error: 'API key not found' });
+    if (!apiKey) throw new AppError(404, ErrorCode.NOT_FOUND, 'API key not found');
 
     await prisma.apiKey.delete({ where: { id: apiKey.id } });
     request.log.info({ userId, keyId: apiKey.id, keyPrefix: apiKey.keyPrefix }, 'API key deleted');

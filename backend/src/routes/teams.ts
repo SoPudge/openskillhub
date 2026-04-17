@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma, USER_SELECT } from '../lib/prisma.js';
 import { authenticate } from './auth.js';
 import { validate, TeamCreateSchema, TeamUpdateSchema, TeamMemberAddSchema, SlugParamSchema, SlugMemberParamSchema, PaginationSchema } from '../lib/validation.js';
+import { AppError, ErrorCode } from '../lib/errors.js';
 
 export async function teamRoutes(app: FastifyInstance) {
   // Create team
@@ -10,13 +11,13 @@ export async function teamRoutes(app: FastifyInstance) {
     if (!userId) return;
 
     const v = validate(TeamCreateSchema, request.body);
-    if (!v.success) return reply.status(400).send({ error: v.error });
+    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
     const { name, slug } = v.data;
 
     const existing = await prisma.team.findUnique({ where: { slug } });
     if (existing) {
       request.log.warn({ userId, slug }, 'Team slug conflict');
-      return reply.status(409).send({ error: 'Team slug already taken' });
+      throw new AppError(409, ErrorCode.TEAM_SLUG_TAKEN, 'Team slug already taken');
     }
 
     const team = await prisma.team.create({
@@ -56,7 +57,7 @@ export async function teamRoutes(app: FastifyInstance) {
   // Get team by slug
   app.get('/:slug', async (request, reply) => {
     const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
     const team = await prisma.team.findUnique({
       where: { slug: pv.data.slug },
@@ -70,7 +71,7 @@ export async function teamRoutes(app: FastifyInstance) {
       },
     });
 
-    if (!team) return reply.status(404).send({ error: 'Team not found' });
+    if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
     return team;
   });
 
@@ -80,12 +81,12 @@ export async function teamRoutes(app: FastifyInstance) {
     if (!userId) return;
 
     const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
     const v = validate(TeamUpdateSchema, request.body);
-    if (!v.success) return reply.status(400).send({ error: v.error });
+    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
 
     const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
-    if (!team) return reply.status(404).send({ error: 'Team not found' });
+    if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
 
     // Only owner or admin can update
     const membership = await prisma.teamMember.findUnique({
@@ -93,7 +94,7 @@ export async function teamRoutes(app: FastifyInstance) {
     });
     if (!membership || !['owner', 'admin'].includes(membership.role)) {
       request.log.warn({ userId, teamSlug: pv.data.slug, action: 'update' }, 'Team update denied');
-      return reply.status(403).send({ error: 'Insufficient permissions' });
+      throw new AppError(403, ErrorCode.TEAM_NOT_ADMIN, 'Insufficient permissions');
     }
 
     const updated = await prisma.team.update({
@@ -111,13 +112,13 @@ export async function teamRoutes(app: FastifyInstance) {
     if (!userId) return;
 
     const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
     const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
-    if (!team) return reply.status(404).send({ error: 'Team not found' });
+    if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
     if (team.ownerId !== userId) {
       request.log.warn({ userId, teamSlug: pv.data.slug }, 'Team delete denied: not owner');
-      return reply.status(403).send({ error: 'Only the owner can delete the team' });
+      throw new AppError(403, ErrorCode.TEAM_NOT_OWNER, 'Only the owner can delete the team');
     }
 
     await prisma.team.delete({ where: { id: team.id } });
@@ -133,12 +134,12 @@ export async function teamRoutes(app: FastifyInstance) {
     if (!userId) return;
 
     const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
     const v = validate(TeamMemberAddSchema, request.body);
-    if (!v.success) return reply.status(400).send({ error: v.error });
+    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
 
     const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
-    if (!team) return reply.status(404).send({ error: 'Team not found' });
+    if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
 
     // Only owner or admin can add members
     const membership = await prisma.teamMember.findUnique({
@@ -146,22 +147,22 @@ export async function teamRoutes(app: FastifyInstance) {
     });
     if (!membership || !['owner', 'admin'].includes(membership.role)) {
       request.log.warn({ userId, teamSlug: pv.data.slug, action: 'addMember' }, 'Team member add denied');
-      return reply.status(403).send({ error: 'Insufficient permissions' });
+      throw new AppError(403, ErrorCode.TEAM_NOT_ADMIN, 'Insufficient permissions');
     }
 
     // Only owner can assign admin role
     if (v.data.role === 'admin' && membership.role !== 'owner') {
       request.log.warn({ userId, teamSlug: pv.data.slug, targetRole: 'admin' }, 'Admin role assign denied: not owner');
-      return reply.status(403).send({ error: 'Only the owner can assign admin role' });
+      throw new AppError(403, ErrorCode.TEAM_NOT_OWNER, 'Only the owner can assign admin role');
     }
 
     const targetUser = await prisma.user.findUnique({ where: { username: v.data.username } });
-    if (!targetUser) return reply.status(404).send({ error: 'User not found' });
+    if (!targetUser) throw new AppError(404, ErrorCode.USER_NOT_FOUND, 'User not found');
 
     const existing = await prisma.teamMember.findUnique({
       where: { teamId_userId: { teamId: team.id, userId: targetUser.id } },
     });
-    if (existing) return reply.status(409).send({ error: 'User is already a member' });
+    if (existing) throw new AppError(409, ErrorCode.TEAM_MEMBER_EXISTS, 'User is already a member');
 
     const member = await prisma.teamMember.create({
       data: { teamId: team.id, userId: targetUser.id, role: v.data.role },
@@ -178,10 +179,10 @@ export async function teamRoutes(app: FastifyInstance) {
     if (!userId) return;
 
     const pv = validate(SlugMemberParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
     const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
-    if (!team) return reply.status(404).send({ error: 'Team not found' });
+    if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
 
     // Only owner or admin can remove; members can remove themselves
     const membership = await prisma.teamMember.findUnique({
@@ -189,19 +190,19 @@ export async function teamRoutes(app: FastifyInstance) {
     });
 
     const targetUser = await prisma.user.findUnique({ where: { username: pv.data.username } });
-    if (!targetUser) return reply.status(404).send({ error: 'User not found' });
+    if (!targetUser) throw new AppError(404, ErrorCode.USER_NOT_FOUND, 'User not found');
 
     const isSelf = targetUser.id === userId;
     const isAdminOrOwner = membership && ['owner', 'admin'].includes(membership.role);
 
     if (!isSelf && !isAdminOrOwner) {
       request.log.warn({ userId, teamSlug: pv.data.slug, action: 'removeMember' }, 'Team member remove denied');
-      return reply.status(403).send({ error: 'Insufficient permissions' });
+      throw new AppError(403, ErrorCode.TEAM_NOT_ADMIN, 'Insufficient permissions');
     }
 
     // Cannot remove the owner
     if (targetUser.id === team.ownerId) {
-      return reply.status(400).send({ error: 'Cannot remove the team owner' });
+      throw new AppError(400, ErrorCode.TEAM_OWNER_LEAVE, 'Cannot remove the team owner');
     }
 
     await prisma.teamMember.delete({
@@ -215,13 +216,13 @@ export async function teamRoutes(app: FastifyInstance) {
   // List members
   app.get('/:slug/members', async (request, reply) => {
     const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
     const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
-    if (!team) return reply.status(404).send({ error: 'Team not found' });
+    if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
 
     const qv = validate(PaginationSchema, request.query);
-    if (!qv.success) return reply.status(400).send({ error: qv.error });
+    if (!qv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, qv.error);
     const { page, limit } = qv.data;
 
     const [members, total] = await Promise.all([

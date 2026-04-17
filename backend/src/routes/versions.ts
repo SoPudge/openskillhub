@@ -2,18 +2,19 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { authenticate } from './auth.js';
 import { validate, VersionCreateSchema, NameParamSchema, NameVersionParamSchema, PaginationSchema } from '../lib/validation.js';
+import { AppError, ErrorCode } from '../lib/errors.js';
 
 export async function versionRoutes(app: FastifyInstance) {
   // List versions for a skill
   app.get('/:name/versions', async (request, reply) => {
     const pv = validate(NameParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
     const qv = validate(PaginationSchema, request.query);
-    if (!qv.success) return reply.status(400).send({ error: qv.error });
+    if (!qv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, qv.error);
     const { page, limit } = qv.data;
 
     const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
-    if (!skill) return reply.status(404).send({ error: 'Skill not found' });
+    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
 
     const [versions, total] = await Promise.all([
       prisma.skillVersion.findMany({
@@ -46,17 +47,17 @@ export async function versionRoutes(app: FastifyInstance) {
     if (!userId) return;
 
     const pv = validate(NameParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
     const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
-    if (!skill) return reply.status(404).send({ error: 'Skill not found' });
+    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
     if (skill.authorId !== userId) {
       request.log.warn({ userId, skillName: pv.data.name }, 'Version create denied: not author');
-      return reply.status(403).send({ error: 'Not the skill author' });
+      throw new AppError(403, ErrorCode.SKILL_NOT_AUTHOR, 'Not the skill author');
     }
 
     const v = validate(VersionCreateSchema, request.body);
-    if (!v.success) return reply.status(400).send({ error: v.error });
+    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
     const { version, changelog } = v.data;
 
     const existing = await prisma.skillVersion.findUnique({
@@ -64,7 +65,7 @@ export async function versionRoutes(app: FastifyInstance) {
     });
     if (existing) {
       request.log.warn({ skillName: pv.data.name, version }, 'Version conflict: already exists');
-      return reply.status(409).send({ error: 'Version already exists' });
+      throw new AppError(409, ErrorCode.VERSION_CONFLICT, 'Version already exists');
     }
 
     const created = await prisma.skillVersion.create({
@@ -78,10 +79,10 @@ export async function versionRoutes(app: FastifyInstance) {
   // Get specific version
   app.get('/:name/versions/:version', async (request, reply) => {
     const pv = validate(NameVersionParamSchema, request.params);
-    if (!pv.success) return reply.status(400).send({ error: pv.error });
+    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
 
     const skill = await prisma.skill.findUnique({ where: { name: pv.data.name } });
-    if (!skill) return reply.status(404).send({ error: 'Skill not found' });
+    if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
 
     const version = await prisma.skillVersion.findUnique({
       where: { skillId_version: { skillId: skill.id, version: pv.data.version } },
@@ -90,7 +91,7 @@ export async function versionRoutes(app: FastifyInstance) {
       },
     });
 
-    if (!version) return reply.status(404).send({ error: 'Version not found' });
+    if (!version) throw new AppError(404, ErrorCode.VERSION_NOT_FOUND, 'Version not found');
     return {
       ...version,
       packages: version.packages.map((p) => ({ ...p, fileSize: Number(p.fileSize) })),
