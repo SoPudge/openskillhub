@@ -106,6 +106,7 @@ openskillhub/
   - Request ID: `crypto.randomUUID()` 生成，全链路追踪
   - 业务日志覆盖: auth (注册/登录/API Key)、skills (CRUD+权限)、packages (上传/安全检测/下载统计)、versions (创建)、teams (CRUD+成员管理)
   - 优雅退出日志、storage 层 ENOENT 容错
+  - 日志文件存储: pino-roll 按日轮转，写入 `<仓库>/logs/app.{日期}.log`，支持 `LOG_DIR` 环境变量自定义路径
 
 ### 🔶 下一步待做
 - **Prisma 迁移**: `downloadCount`/`fileSize` BigInt 变更尚未生成 migration，需在远程服务器执行 `pnpm --filter backend prisma migrate dev`

@@ -738,7 +738,7 @@ metadata:
 - [x] Zod 请求校验 (18 个 schema，覆盖所有路由 body/params/query，含 PaginationSchema、SlugParamSchema)
 - [x] 输入验证加固 (zip 路径穿越、YAML DoS、注册校验、10MB 上限)
 - [ ] CI/CD 流水线
-- [x] 监控 & 日志 (Pino 结构化日志 + 全局错误处理 + Request ID + 敏感字段脱敏)
+- [x] 监控 & 日志 (Pino 结构化日志 + 全局错误处理 + Request ID + 敏感字段脱敏 + pino-roll 日志文件轮转)
 
 ---
 
