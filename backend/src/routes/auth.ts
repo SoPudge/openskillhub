@@ -50,6 +50,9 @@ export async function authRoutes(app: FastifyInstance) {
       request.log.warn({ email: email.replace(/(.{2}).*(@.*)/, '$1***$2') }, 'Login failed: invalid credentials');
       throw new AppError(401, ErrorCode.AUTH_INVALID_CREDENTIALS, 'Invalid credentials');
     }
+    if (user.banned) {
+      throw new AppError(403, ErrorCode.USER_BANNED, 'Account is banned');
+    }
 
     request.log.info({ userId: user.id, username: user.username }, 'User logged in');
     const token = jwt.sign({ sub: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
@@ -59,6 +62,7 @@ export async function authRoutes(app: FastifyInstance) {
         email: user.email,
         username: user.username,
         displayName: user.displayName,
+        role: user.role,
       },
       token,
     };
@@ -77,6 +81,7 @@ export async function authRoutes(app: FastifyInstance) {
         username: true,
         displayName: true,
         avatarUrl: true,
+        role: true,
         createdAt: true,
       },
     });

@@ -39,6 +39,10 @@ export enum ErrorCode {
 
   // Users
   USER_NOT_FOUND = 'USER_NOT_FOUND',
+
+  // Admin
+  ADMIN_REQUIRED = 'ADMIN_REQUIRED',
+  USER_BANNED = 'USER_BANNED',
 }
 
 // ─── AppError ───────────────────────────────────────────

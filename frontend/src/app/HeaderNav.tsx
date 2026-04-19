@@ -15,6 +15,11 @@ export function HeaderNav() {
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
         {loading ? null : user ? (
           <>
+            {user.role === 'admin' && (
+              <a href="/admin" style={{ textDecoration: 'none', color: '#dc2626', fontSize: '0.875rem', fontWeight: 500 }}>
+                管理
+              </a>
+            )}
             <a href="/dashboard" style={{ textDecoration: 'none', color: '#111', fontSize: '0.875rem' }}>
               {user.displayName || user.username}
             </a>

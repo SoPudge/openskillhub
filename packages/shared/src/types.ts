@@ -1,4 +1,4 @@
-import type { AgentType, Visibility, TeamRole } from './constants';
+import type { AgentType, Visibility, TeamRole, UserRole } from './constants';
 
 // ─── User ───────────────────────────────────────────────
 export interface User {
@@ -7,6 +7,8 @@ export interface User {
   username: string;
   displayName?: string;
   avatarUrl?: string;
+  role: UserRole;
+  banned: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,6 +49,7 @@ export interface Skill {
   teamId?: string;
   categoryId?: string;
   visibility: Visibility;
+  featured: boolean;
   homepageUrl?: string;
   license?: string;
   downloadCount: number;

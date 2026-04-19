@@ -24,3 +24,6 @@ export type Visibility = (typeof VISIBILITY_TYPES)[number];
 
 export const TEAM_ROLES = ['owner', 'admin', 'member'] as const;
 export type TeamRole = (typeof TEAM_ROLES)[number];
+
+export const USER_ROLES = ['user', 'admin'] as const;
+export type UserRole = (typeof USER_ROLES)[number];

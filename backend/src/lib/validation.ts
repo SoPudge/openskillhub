@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AGENT_TYPES, VISIBILITY_TYPES } from '@openskillhub/shared';
+import { AGENT_TYPES, VISIBILITY_TYPES, USER_ROLES } from '@openskillhub/shared';
 
 // ─── Auth ───────────────────────────────────────────────
 export const RegisterSchema = z.object({
@@ -130,3 +130,44 @@ export function validate<T>(schema: z.ZodSchema<T>, data: unknown): { success: t
   const messages = result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
   return { success: false, error: messages };
 }
+
+// ─── Admin ──────────────────────────────────────────────
+export const AdminUserUpdateSchema = z.object({
+  role: z.enum(USER_ROLES).optional(),
+  banned: z.boolean().optional(),
+});
+
+export const AdminSkillUpdateSchema = z.object({
+  featured: z.boolean().optional(),
+  visibility: z.enum(VISIBILITY_TYPES).optional(),
+});
+
+export const AdminCategoryCreateSchema = z.object({
+  name: z.string().min(1).max(64),
+  slug: z.string().min(2).max(64).regex(/^[a-z][a-z0-9-]*[a-z0-9]$/, 'Lowercase alphanumeric + hyphens'),
+  description: z.string().max(500).optional(),
+  sortOrder: z.number().int().min(0).optional(),
+});
+
+export const AdminCategoryUpdateSchema = z.object({
+  name: z.string().min(1).max(64).optional(),
+  description: z.string().max(500).optional(),
+  sortOrder: z.number().int().min(0).optional(),
+});
+
+export const AdminTagUpdateSchema = z.object({
+  name: z.string().min(1).max(64),
+});
+
+export const AdminTagMergeSchema = z.object({
+  source: z.array(z.string().max(64)).min(1).max(50),
+  target: z.string().max(64),
+});
+
+export const AdminUserListSchema = z.object({
+  q: z.string().max(200).optional(),
+  role: z.enum(USER_ROLES).optional(),
+  banned: z.enum(['true', 'false']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});

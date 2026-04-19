@@ -1,6 +1,18 @@
 import { prisma } from './prisma.js';
 import { AppError, ErrorCode } from './errors.js';
 
+// ─── Admin Check ────────────────────────────────────────
+
+export async function requireAdmin(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true, banned: true },
+  });
+  if (!user) throw new AppError(401, ErrorCode.AUTH_REQUIRED, 'Authentication required');
+  if (user.banned) throw new AppError(403, ErrorCode.USER_BANNED, 'Account is banned');
+  if (user.role !== 'admin') throw new AppError(403, ErrorCode.ADMIN_REQUIRED, 'Admin access required');
+}
+
 // ─── Skill Lookup ───────────────────────────────────────
 
 export async function getSkillOrThrow(name: string) {
