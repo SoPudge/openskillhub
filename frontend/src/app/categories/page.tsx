@@ -15,10 +15,20 @@ export default async function CategoriesPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>技能分类</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          按分类浏览 {totalSkills} 个技能，找到适合你工作流的 AI Agent 技能
+      {/* Page Header */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.06))',
+        borderRadius: '16px',
+        padding: '2rem',
+        marginBottom: '2rem',
+        border: '1px solid var(--border)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #667eea, #764ba2, #f093fb)' }} />
+        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>技能分类</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: 1.6 }}>
+          按分类浏览 <strong style={{ color: 'var(--accent)' }}>{totalSkills}</strong> 个技能，找到适合你工作流的 AI Agent 技能
         </p>
       </div>
 
@@ -38,21 +48,31 @@ export default async function CategoriesPage() {
             <Link
               key={cat.slug}
               href={`/skills?category=${cat.slug}`}
+              className="category-card"
               style={{
                 border: '1px solid var(--border)',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 padding: '1.25rem',
                 display: 'block',
                 textDecoration: 'none',
                 color: 'inherit',
-                transition: 'border-color 0.15s, box-shadow 0.15s',
+                background: 'var(--bg-secondary)',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '0.6rem' }}>
+                <span style={{
+                  fontSize: '1.5rem',
+                  width: '2.75rem', height: '2.75rem',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, rgba(102,126,234,0.12), rgba(118,75,162,0.12))',
+                  flexShrink: 0,
+                }}>
                   {CATEGORY_ICONS[cat.slug] || '📦'}
                 </span>
-                <h2 style={{ fontSize: '1.1rem', margin: 0 }}>{cat.name}</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>{cat.name}</h2>
               </div>
               {cat.description && (
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.75rem', lineHeight: '1.5' }}>
@@ -66,10 +86,15 @@ export default async function CategoriesPage() {
                   alignItems: 'center',
                   fontSize: '0.8rem',
                   color: 'var(--text-muted)',
+                  paddingTop: '0.6rem',
+                  borderTop: '1px solid var(--border)',
                 }}
               >
-                <span>{cat._count.skills} 个技能</span>
-                <span style={{ color: 'var(--accent)' }}>浏览 →</span>
+                <span style={{
+                  background: 'var(--accent-bg)', color: 'var(--accent)',
+                  padding: '0.15rem 0.55rem', borderRadius: '10px', fontWeight: 600, fontSize: '0.75rem',
+                }}>{cat._count.skills} 个技能</span>
+                <span style={{ color: 'var(--accent)', fontWeight: 500 }}>浏览 →</span>
               </div>
             </Link>
           ))}
@@ -80,9 +105,10 @@ export default async function CategoriesPage() {
       <div
         style={{
           marginTop: '2.5rem',
-          padding: '1.25rem',
-          background: 'var(--bg-secondary)',
-          borderRadius: '10px',
+          padding: '1.5rem',
+          background: 'linear-gradient(135deg, rgba(102,126,234,0.06), rgba(118,75,162,0.04))',
+          border: '1px solid var(--border)',
+          borderRadius: '12px',
           textAlign: 'center',
         }}
       >
@@ -93,12 +119,14 @@ export default async function CategoriesPage() {
           href="/skills"
           style={{
             display: 'inline-block',
-            padding: '0.5rem 1.5rem',
-            background: 'var(--accent)',
+            padding: '0.6rem 1.5rem',
+            background: 'linear-gradient(135deg, #667eea, #764ba2)',
             color: 'white',
-            borderRadius: '6px',
+            borderRadius: '8px',
             textDecoration: 'none',
             fontSize: '0.9rem',
+            fontWeight: 500,
+            transition: 'transform 0.15s, box-shadow 0.15s',
           }}
         >
           浏览全部技能
