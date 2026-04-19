@@ -28,7 +28,7 @@ openskillhub/
 ├── backend/              # Fastify API 服务 (port 3001)
 │   ├── src/
 │   │   ├── app.ts        # 入口 + 中间件 + rate-limit + 启动校验
-│   │   ├── routes/       # auth, skills, versions, packages, categories, teams, stats, admin
+│   │   ├── routes/       # auth, skills, versions, packages, categories, teams, stats, admin, clawhub
 │   │   ├── storage/      # 抽象层: local / s3
 │   │   └── lib/
 │   │       ├── prisma.ts # PrismaClient 单例
@@ -64,7 +64,7 @@ openskillhub/
 - **仓库**: https://github.com/SoPudge/openskillhub.git
 - **分支**: `main` (稳定), `dev` (开发)
 
-## API 端点 (36 个，全部可用)
+## API 端点 (39 个，全部可用)
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -105,6 +105,9 @@ openskillhub/
 | **PATCH** | **/admin/tags/:slug** | **重命名标签** |
 | **POST** | **/admin/tags/merge** | **合并标签** |
 | **DELETE** | **/admin/tags/:slug** | **删除标签** |
+| GET | /clawhub/search?q= | ClawHub 向量搜索代理 |
+| GET | /clawhub/skills | ClawHub 技能列表代理 |
+| GET | /clawhub/skills/:slug | ClawHub 技能详情代理 |
 
 ## 当前进度 (最后更新: 2026-04-20)
 
@@ -182,9 +185,15 @@ openskillhub/
   - `.dockerignore`: 排除 node_modules/.next/dist/logs/.env/.git
   - 两个镜像均在远程构建测试通过, 容器启动正常 (backend HTTP 200 API, frontend HTTP 200 页面)
   - `shared` 包 `.js` 扩展名修复: ESM import 需要 `.js` 后缀, Docker build 时 sed 替换 exports 指向 dist/
+- **ClawHub 集成 Phase 6 (2026-04-20)**:
+  - 后端: `routes/clawhub.ts` 代理 clawhub.ai API v1 (search/skills/skills/:slug), 8s 超时, Zod 校验
+  - 前端: `/clawhub` 客户端搜索浏览页面 (向量搜索 + 结果列表 + 详情面板 + ClawHub 链接)
+  - 导航栏: 新增 ClawHub 链接 (紫色标识区分)
+  - 验证通过: 远程 search API 返回 20 结果, skill detail 含下载数/星标/版本/changelog
 
 ### 🔶 下一步待做
-- Phase 6 剩余: ClawHub 集成探索（OpenClaw clawhub.ai 互操作）
+- Phase 6 全部完成，Phase 7 全部完成
+- 可继续: SDK 包 (TypeScript API client), 更多前端功能, 测试覆盖
 
 ### ⚠️ 已知问题
 - `packages/shared` 的 exports 指向 `./src/index.ts` 而非 `./dist/`（因为 tsx dev 模式不编译，生产构建时需改回）

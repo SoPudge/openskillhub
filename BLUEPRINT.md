@@ -73,6 +73,7 @@ openskillhub/
 │   │   │   ├── versions.ts
 │   │   │   ├── packages.ts
 │   │   │   ├── categories.ts
+│   │   │   ├── clawhub.ts        # ClawHub 搜索代理
 │   │   │   └── stats.ts
 │   │   ├── services/             # 业务逻辑
 │   │   ├── middleware/           # 认证、错误处理
@@ -723,7 +724,7 @@ metadata:
 - [x] local-skill 的 `--agent` 参数 (osh.sh 已实现多 Agent 路径检测)
 - [x] 按 Agent 类型的安装指引 (Web 详情页)
 - [x] 技能跨 Agent 兼容性标记
-- [ ] ClawHub 集成探索（OpenClaw 已有 clawhub.ai 技能市场，考虑如何互操作）
+- [x] ClawHub 集成探索（后端代理 clawhub.ai API v1，前端 /clawhub 搜索浏览页面）
 
 ### Phase 7: 生产就绪 (Production)
 
