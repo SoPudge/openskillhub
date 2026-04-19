@@ -95,7 +95,7 @@ export default async function SkillsPage({
                 key={skill.id}
                 href={`/skills/${skill.name}`}
                 style={{
-                  border: '1px solid #eee',
+                  border: '1px solid var(--border)',
                   borderRadius: '8px',
                   padding: '1rem',
                   display: 'block',
@@ -112,13 +112,13 @@ export default async function SkillsPage({
                   }}
                 >
                   <h3 style={{ fontSize: '1.05rem' }}>{highlightText(skill.displayName, params.q)}</h3>
-                  <span style={{ fontSize: '0.8rem', color: '#999', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                     ↓ {skill.downloadCount}
                   </span>
                 </div>
                 <p
                   style={{
-                    color: '#666',
+                    color: 'var(--text-secondary)',
                     fontSize: '0.9rem',
                     marginTop: '0.25rem',
                     lineHeight: '1.5',
@@ -137,7 +137,7 @@ export default async function SkillsPage({
                     display: 'flex',
                     gap: '0.75rem',
                     fontSize: '0.8rem',
-                    color: '#999',
+                    color: 'var(--text-muted)',
                     flexWrap: 'wrap',
                     alignItems: 'center',
                   }}

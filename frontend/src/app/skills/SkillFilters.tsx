@@ -136,7 +136,7 @@ export default function SkillFilters({
           style={{
             flex: 1,
             padding: '0.5rem 1rem',
-            border: '1px solid #ddd',
+            border: '1px solid var(--border-strong)',
             borderRadius: '6px',
             fontSize: '1rem',
           }}
@@ -146,7 +146,7 @@ export default function SkillFilters({
           onClick={() => submitSearch(inputValue)}
           style={{
             padding: '0.5rem 1.5rem',
-            background: '#0070f3',
+            background: 'var(--accent)',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -159,8 +159,8 @@ export default function SkillFilters({
         {showSuggestions && suggestions.length > 0 && (
           <div style={{
             position: 'absolute', top: '100%', left: 0, right: 0,
-            background: 'white', border: '1px solid #ddd', borderRadius: '6px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10,
+            background: 'var(--bg)', border: '1px solid var(--border-strong)', borderRadius: '6px',
+            boxShadow: 'var(--card-shadow)', zIndex: 10,
             marginTop: '4px', overflow: 'hidden',
           }}>
             {suggestions.map((s) => (
@@ -172,7 +172,7 @@ export default function SkillFilters({
                   padding: '0.5rem 1rem', border: 'none', background: 'none',
                   cursor: 'pointer', fontSize: '0.9rem',
                 }}
-                onMouseEnter={(e) => { (e.target as HTMLElement).style.background = '#f5f5f5'; }}
+                onMouseEnter={(e) => { (e.target as HTMLElement).style.background = 'var(--bg-secondary)'; }}
                 onMouseLeave={(e) => { (e.target as HTMLElement).style.background = 'none'; }}
               >
                 <span style={{ fontWeight: 500 }}>{s.displayName}</span>
@@ -191,10 +191,10 @@ export default function SkillFilters({
           onChange={(e) => updateParam('category', e.target.value)}
           style={{
             padding: '0.4rem 0.75rem',
-            border: '1px solid #ddd',
+            border: '1px solid var(--border-strong)',
             borderRadius: '6px',
             fontSize: '0.85rem',
-            background: currentCategory ? '#e8f4fd' : 'white',
+            background: currentCategory ? 'var(--accent-bg)' : 'var(--bg)',
             cursor: 'pointer',
           }}
         >
@@ -212,10 +212,10 @@ export default function SkillFilters({
           onChange={(e) => updateParam('agent', e.target.value)}
           style={{
             padding: '0.4rem 0.75rem',
-            border: '1px solid #ddd',
+            border: '1px solid var(--border-strong)',
             borderRadius: '6px',
             fontSize: '0.85rem',
-            background: currentAgent ? '#e8f4fd' : 'white',
+            background: currentAgent ? 'var(--accent-bg)' : 'var(--bg)',
             cursor: 'pointer',
           }}
         >
@@ -233,10 +233,10 @@ export default function SkillFilters({
           onChange={(e) => updateParam('sort', e.target.value)}
           style={{
             padding: '0.4rem 0.75rem',
-            border: '1px solid #ddd',
+            border: '1px solid var(--border-strong)',
             borderRadius: '6px',
             fontSize: '0.85rem',
-            background: currentSort ? '#e8f4fd' : 'white',
+            background: currentSort ? 'var(--accent-bg)' : 'var(--bg)',
             cursor: 'pointer',
           }}
         >
@@ -254,10 +254,10 @@ export default function SkillFilters({
             style={{
               padding: '0.4rem 0.75rem',
               background: 'transparent',
-              border: '1px solid #ddd',
+              border: '1px solid var(--border-strong)',
               borderRadius: '6px',
               fontSize: '0.85rem',
-              color: '#666',
+              color: 'var(--text-secondary)',
               cursor: 'pointer',
             }}
           >
@@ -279,9 +279,9 @@ export default function SkillFilters({
                   padding: '0.2rem 0.6rem',
                   borderRadius: '12px',
                   fontSize: '0.8rem',
-                  border: active ? '1px solid #0070f3' : '1px solid #ddd',
-                  background: active ? '#e8f4fd' : '#f8f8f8',
-                  color: active ? '#0070f3' : '#555',
+                  border: active ? '1px solid var(--accent)' : '1px solid var(--border-strong)',
+                  background: active ? 'var(--accent-bg)' : 'var(--bg-secondary)',
+                  color: active ? 'var(--accent)' : 'var(--text-secondary)',
                   cursor: 'pointer',
                 }}
               >
