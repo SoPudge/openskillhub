@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeProvider>
           <AuthProvider>
-            <header style={{ borderBottom: '1px solid var(--border)', padding: '1rem 2rem', background: 'var(--bg)' }}>
+            <header style={{ borderBottom: '1px solid var(--border)', padding: '0 2rem', background: 'var(--bg)', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', backgroundColor: 'color-mix(in srgb, var(--bg) 85%, transparent)' }}>
               <HeaderNav />
             </header>
             <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
