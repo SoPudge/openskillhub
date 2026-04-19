@@ -11,6 +11,7 @@
     "test": "echo 'no tests yet'"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1032.0",
     "@fastify/cors": "^11.0.0",
     "@fastify/multipart": "^9.0.0",
     "@fastify/rate-limit": "^10.3.0",
