@@ -28,7 +28,7 @@ RUN find /app -path '*/.prisma/client/index.js' -exec dirname {} \; \
     | head -1 | xargs -I{} cp -rL {} /tmp/prisma-client
 
 # Deploy backend with production deps (creates standalone flat node_modules)
-RUN pnpm --filter @openskillhub/backend deploy --prod /prod
+RUN pnpm --filter @openskillhub/backend deploy --legacy --prod /prod
 
 # ── Stage 2: Runtime ──────────────────────────────────────
 FROM node:22-alpine
