@@ -175,10 +175,17 @@ openskillhub/
   - `storage/index.ts`: 工厂函数支持 `STORAGE_TYPE=s3` 分支，读取 S3_ENDPOINT/REGION/BUCKET/ACCESS_KEY/SECRET_KEY 环境变量
   - MinIO 容器已部署 (docker-compose.yml)，bucket `openskillhub-packages` 已创建
   - 端到端验证通过: 上传→MinIO 存储→下载→MD5 一致
+- **Docker 镜像构建 Phase 7 (2026-04-20)**:
+  - `Dockerfile.backend`: 多阶段构建 (builder→runtime), pnpm deploy --legacy 打包, Prisma client 手动提取, 最终镜像 ~434MB
+  - `Dockerfile.frontend`: 多阶段构建, Next.js standalone 输出, 最终镜像 ~222MB
+  - `docker-compose.yml`: 完整编排 — postgres + minio + minio-init(自动创建bucket) + backend + frontend, S3 环境变量注入
+  - `.dockerignore`: 排除 node_modules/.next/dist/logs/.env/.git
+  - 两个镜像均在远程构建测试通过, 容器启动正常 (backend HTTP 200 API, frontend HTTP 200 页面)
+  - `shared` 包 `.js` 扩展名修复: ESM import 需要 `.js` 后缀, Docker build 时 sed 替换 exports 指向 dist/
 
 ### 🔶 下一步待做
 - Phase 6 剩余: ClawHub 集成探索（OpenClaw clawhub.ai 互操作）
-- Phase 7 剩余: Docker 镜像 (Dockerfile.backend/frontend)、Docker Compose 完整编排、源码部署文档、CI/CD
+- Phase 7 剩余: 源码部署文档 (环境变量 + systemd/pm2)、CI/CD 流水线
 
 ### ⚠️ 已知问题
 - `packages/shared` 的 exports 指向 `./src/index.ts` 而非 `./dist/`（因为 tsx dev 模式不编译，生产构建时需改回）

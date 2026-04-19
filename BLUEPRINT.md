@@ -730,8 +730,8 @@ metadata:
 > **目标: 可部署、可运维**
 
 - [x] S3/MinIO 存储适配 (S3StorageProvider + MinIO 容器 + 端到端验证通过)
-- [ ] Dockerfile.backend + Dockerfile.frontend 镜像构建
-- [ ] Docker Compose 完整编排 (backend + frontend + PG + MinIO)
+- [x] Dockerfile.backend + Dockerfile.frontend 镜像构建 (多阶段构建, pnpm deploy --legacy, Prisma client 提取)
+- [x] Docker Compose 完整编排 (backend + frontend + PG + MinIO + minio-init)
 - [ ] 源码部署文档 (环境变量 + systemd/pm2 配置)
 - [x] 环境变量管理 & 配置优化 (启动校验已实现)
 - [x] Rate limiting (`@fastify/rate-limit`: 全局 100/min，登录 10/15min，上传 10/hour)
