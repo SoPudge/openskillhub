@@ -19,6 +19,11 @@ export const ApiKeyCreateSchema = z.object({
   name: z.string().min(1).max(128),
 });
 
+export const ProfileUpdateSchema = z.object({
+  displayName: z.string().max(128).optional(),
+  avatarUrl: z.string().url().max(512).optional().or(z.literal('')),
+});
+
 // ─── Skills ─────────────────────────────────────────────
 export const SkillCreateSchema = z.object({
   name: z.string().min(2).max(64).regex(/^[a-z][a-z0-9-]*[a-z0-9]$/, 'Lowercase alphanumeric + hyphens, must start with letter'),

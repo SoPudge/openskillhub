@@ -27,6 +27,9 @@ export function HeaderNav() {
             <Link href="/dashboard" style={{ textDecoration: 'none', color: '#111', fontSize: '0.875rem' }}>
               {user.displayName || user.username}
             </Link>
+            <Link href="/settings" style={{ textDecoration: 'none', color: '#666', fontSize: '0.8rem' }}>
+              ⚙
+            </Link>
           </>
         ) : (
           <>

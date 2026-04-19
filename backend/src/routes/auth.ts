@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import type { StringValue } from 'ms';
 import { randomBytes } from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
-import { validateOrThrow, RegisterSchema, LoginSchema, ApiKeyCreateSchema, IdParamSchema } from '../lib/validation.js';
+import { validateOrThrow, RegisterSchema, LoginSchema, ApiKeyCreateSchema, IdParamSchema, ProfileUpdateSchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -82,6 +82,32 @@ export async function authRoutes(app: FastifyInstance) {
     });
     if (!user) throw new AppError(404, ErrorCode.USER_NOT_FOUND, 'User not found');
     return user;
+  });
+
+  // Update current user profile
+  app.patch('/me', async (request, reply) => {
+    const userId = await authenticate(request);
+    const data = validateOrThrow(ProfileUpdateSchema, request.body);
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.displayName !== undefined && { displayName: data.displayName || null }),
+        ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl || null }),
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        displayName: true,
+        avatarUrl: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    request.log.info({ userId }, 'Profile updated');
+    return updated;
   });
 
   // Create API key
