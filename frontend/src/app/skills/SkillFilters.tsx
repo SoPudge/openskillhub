@@ -122,44 +122,52 @@ export default function SkillFilters({
 
   return (
     <div style={{ marginBottom: '1.5rem' }}>
-      {/* 搜索栏 */}
       {/* 搜索栏 + 自动补全 */}
       <div ref={suggestRef} style={{ position: 'relative', display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-        {/* 保留现有筛选参数 */}
         <input
           type="text"
           placeholder="搜索技能..."
           value={inputValue}
           onChange={(e) => { onInputChange(e.target.value); setShowSuggestions(true); }}
-          onFocus={() => { if (suggestions.length) setShowSuggestions(true); }}
+          onFocus={(e) => { if (suggestions.length) setShowSuggestions(true); e.currentTarget.style.borderColor = '#667eea'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.1)'; }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submitSearch(inputValue); } }}
           style={{
             flex: 1,
-            padding: '0.5rem 1rem',
-            border: '1px solid var(--border-strong)',
-            borderRadius: '6px',
-            fontSize: '1rem',
+            padding: '0.6rem 1rem',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            fontSize: '0.95rem',
+            background: 'var(--bg)',
+            color: 'var(--text)',
+            outline: 'none',
+            transition: 'border-color 0.15s, box-shadow 0.15s',
           }}
         />
         <button
           type="button"
           onClick={() => submitSearch(inputValue)}
           style={{
-            padding: '0.5rem 1.5rem',
-            background: 'var(--accent)',
+            padding: '0.6rem 1.25rem',
+            background: 'linear-gradient(135deg, #667eea, #764ba2)',
             color: 'white',
             border: 'none',
-            borderRadius: '6px',
+            borderRadius: 10,
             cursor: 'pointer',
             fontSize: '0.9rem',
+            fontWeight: 600,
+            transition: 'box-shadow 0.15s',
+            boxShadow: '0 2px 8px rgba(102,126,234,0.25)',
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(102,126,234,0.4)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(102,126,234,0.25)'; }}
         >
           搜索
         </button>
         {showSuggestions && suggestions.length > 0 && (
           <div style={{
             position: 'absolute', top: '100%', left: 0, right: 0,
-            background: 'var(--bg)', border: '1px solid var(--border-strong)', borderRadius: '6px',
+            background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10,
             boxShadow: 'var(--card-shadow)', zIndex: 10,
             marginTop: '4px', overflow: 'hidden',
           }}>
@@ -170,13 +178,14 @@ export default function SkillFilters({
                 style={{
                   display: 'block', width: '100%', textAlign: 'left',
                   padding: '0.5rem 1rem', border: 'none', background: 'none',
-                  cursor: 'pointer', fontSize: '0.9rem',
+                  cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text)',
+                  transition: 'background 0.1s',
                 }}
-                onMouseEnter={(e) => { (e.target as HTMLElement).style.background = 'var(--bg-secondary)'; }}
+                onMouseEnter={(e) => { (e.target as HTMLElement).style.background = 'var(--bg-tertiary, var(--bg-secondary))'; }}
                 onMouseLeave={(e) => { (e.target as HTMLElement).style.background = 'none'; }}
               >
                 <span style={{ fontWeight: 500 }}>{s.displayName}</span>
-                <span style={{ color: '#999', marginLeft: '0.5rem', fontSize: '0.8rem' }}>{s.name}</span>
+                <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.8rem' }}>{s.name}</span>
               </button>
             ))}
           </div>
@@ -184,18 +193,21 @@ export default function SkillFilters({
       </div>
 
       {/* 筛选行 */}
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* 分类下拉 */}
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <select
           value={currentCategory}
           onChange={(e) => updateParam('category', e.target.value)}
           style={{
             padding: '0.4rem 0.75rem',
-            border: '1px solid var(--border-strong)',
-            borderRadius: '6px',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
             fontSize: '0.85rem',
             background: currentCategory ? 'var(--accent-bg)' : 'var(--bg)',
+            color: currentCategory ? 'var(--accent)' : 'var(--text)',
             cursor: 'pointer',
+            outline: 'none',
+            fontWeight: currentCategory ? 500 : 400,
+            transition: 'border-color 0.15s',
           }}
         >
           <option value="">所有分类</option>
@@ -206,17 +218,20 @@ export default function SkillFilters({
           ))}
         </select>
 
-        {/* Agent 下拉 */}
         <select
           value={currentAgent}
           onChange={(e) => updateParam('agent', e.target.value)}
           style={{
             padding: '0.4rem 0.75rem',
-            border: '1px solid var(--border-strong)',
-            borderRadius: '6px',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
             fontSize: '0.85rem',
             background: currentAgent ? 'var(--accent-bg)' : 'var(--bg)',
+            color: currentAgent ? 'var(--accent)' : 'var(--text)',
             cursor: 'pointer',
+            outline: 'none',
+            fontWeight: currentAgent ? 500 : 400,
+            transition: 'border-color 0.15s',
           }}
         >
           <option value="">所有 Agent</option>
@@ -227,17 +242,20 @@ export default function SkillFilters({
           ))}
         </select>
 
-        {/* 排序下拉 */}
         <select
           value={currentSort}
           onChange={(e) => updateParam('sort', e.target.value)}
           style={{
             padding: '0.4rem 0.75rem',
-            border: '1px solid var(--border-strong)',
-            borderRadius: '6px',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
             fontSize: '0.85rem',
             background: currentSort ? 'var(--accent-bg)' : 'var(--bg)',
+            color: currentSort ? 'var(--accent)' : 'var(--text)',
             cursor: 'pointer',
+            outline: 'none',
+            fontWeight: currentSort ? 500 : 400,
+            transition: 'border-color 0.15s',
           }}
         >
           {SORT_OPTIONS.map((s) => (
@@ -247,19 +265,21 @@ export default function SkillFilters({
           ))}
         </select>
 
-        {/* 清除筛选 */}
         {hasFilters && (
           <button
             onClick={clearAll}
             style={{
               padding: '0.4rem 0.75rem',
               background: 'transparent',
-              border: '1px solid var(--border-strong)',
-              borderRadius: '6px',
+              border: '1px solid var(--border)',
+              borderRadius: 10,
               fontSize: '0.85rem',
-              color: 'var(--text-secondary)',
+              color: 'var(--text-muted)',
               cursor: 'pointer',
+              transition: 'color 0.15s, border-color 0.15s',
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'var(--danger)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
           >
             ✕ 清除筛选
           </button>
@@ -277,12 +297,14 @@ export default function SkillFilters({
                 onClick={() => toggleTag(t.slug)}
                 style={{
                   padding: '0.2rem 0.6rem',
-                  borderRadius: '12px',
+                  borderRadius: 10,
                   fontSize: '0.8rem',
-                  border: active ? '1px solid var(--accent)' : '1px solid var(--border-strong)',
+                  border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
                   background: active ? 'var(--accent-bg)' : 'var(--bg-secondary)',
                   color: active ? 'var(--accent)' : 'var(--text-secondary)',
                   cursor: 'pointer',
+                  fontWeight: active ? 500 : 400,
+                  transition: 'all 0.15s',
                 }}
               >
                 {t.name}
@@ -298,39 +320,39 @@ export default function SkillFilters({
           style={{
             marginTop: '0.75rem',
             fontSize: '0.85rem',
-            color: '#666',
+            color: 'var(--text-muted)',
             display: 'flex',
-            gap: '0.5rem',
+            gap: '0.4rem',
             flexWrap: 'wrap',
             alignItems: 'center',
           }}
         >
           <span>当前筛选:</span>
           {currentQ && (
-            <span style={{ background: '#f0f0f0', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+            <span style={{ background: 'var(--bg-secondary)', padding: '0.15rem 0.5rem', borderRadius: 8, border: '1px solid var(--border)' }}>
               搜索 &quot;{currentQ}&quot;
             </span>
           )}
           {currentCategory && (
-            <span style={{ background: '#e8f4fd', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+            <span style={{ background: 'var(--accent-bg)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: 8, fontWeight: 500 }}>
               分类: {categories.find((c) => c.slug === currentCategory)?.name || currentCategory}
             </span>
           )}
           {currentAgent && (
-            <span style={{ background: '#e8f4fd', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+            <span style={{ background: 'var(--accent-bg)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: 8, fontWeight: 500 }}>
               Agent: {AGENT_OPTIONS.find((a) => a.value === currentAgent)?.label || currentAgent}
             </span>
           )}
           {activeTags.map((t) => (
             <span
               key={t}
-              style={{ background: '#e8f4fd', padding: '0.15rem 0.5rem', borderRadius: '4px' }}
+              style={{ background: 'var(--accent-bg)', color: 'var(--accent)', padding: '0.15rem 0.5rem', borderRadius: 8, fontWeight: 500 }}
             >
               #{tags.find((tag) => tag.slug === t)?.name || t}
             </span>
           ))}
           {currentSort && (
-            <span style={{ background: '#f0f0f0', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+            <span style={{ background: 'var(--bg-secondary)', padding: '0.15rem 0.5rem', borderRadius: 8, border: '1px solid var(--border)' }}>
               排序: {SORT_OPTIONS.find((s) => s.value === currentSort)?.label || currentSort}
             </span>
           )}
