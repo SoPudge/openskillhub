@@ -7,11 +7,13 @@ import Link from 'next/link';
 import HeroSearch from './HeroSearch';
 
 export default async function HomePage() {
-  const [skills, categories] = await Promise.all([
+  const [skills, categories, stats] = await Promise.all([
     apiFetch<PaginatedResponse<Skill>>('/skills?sort=downloads&limit=8', { next: { revalidate: 60 } } as RequestInit)
       .then((res) => res.data)
       .catch(() => [] as Skill[]),
     apiFetch<CategoryWithCount[]>('/categories', { next: { revalidate: 300 } } as RequestInit).catch(() => [] as CategoryWithCount[]),
+    apiFetch<{ skills: number; authors: number; downloads: number }>('/stats/overview', { next: { revalidate: 60 } } as RequestInit)
+      .catch(() => ({ skills: 0, authors: 0, downloads: 0 })),
   ]);
 
   return (
@@ -29,6 +31,24 @@ export default async function HomePage() {
           支持 OpenCode · OpenClaw · Claude Code · Cursor · Goose · Amp
         </p>
         <HeroSearch />
+        {(stats.skills > 0 || stats.downloads > 0) && (
+          <div className="hero-stats">
+            <div className="hero-stat">
+              <span className="hero-stat-num">{stats.skills}</span>
+              <span className="hero-stat-label">技能</span>
+            </div>
+            <div className="hero-stat-divider" />
+            <div className="hero-stat">
+              <span className="hero-stat-num">{stats.downloads}</span>
+              <span className="hero-stat-label">下载</span>
+            </div>
+            <div className="hero-stat-divider" />
+            <div className="hero-stat">
+              <span className="hero-stat-num">{stats.authors}</span>
+              <span className="hero-stat-label">开发者</span>
+            </div>
+          </div>
+        )}
         <div className="hero-actions">
           <Link href="/skills" className="hero-btn-secondary">
             浏览技能

@@ -80,3 +80,19 @@ export async function statsRoutes(app: FastifyInstance) {
     };
   });
 }
+
+// Global platform stats (registered separately)
+export async function globalStatsRoutes(app: FastifyInstance) {
+  app.get('/overview', async () => {
+    const [skillCount, authorCount, agg] = await Promise.all([
+      prisma.skill.count({ where: { visibility: 'public' } }),
+      prisma.user.count(),
+      prisma.skill.aggregate({ _sum: { downloadCount: true }, where: { visibility: 'public' } }),
+    ]);
+    return {
+      skills: skillCount,
+      authors: authorCount,
+      downloads: Number(agg._sum.downloadCount ?? 0),
+    };
+  });
+}

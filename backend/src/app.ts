@@ -12,7 +12,7 @@ import { packageRoutes } from './routes/packages.js';
 import { categoryRoutes } from './routes/categories.js';
 import { authRoutes } from './routes/auth.js';
 import { teamRoutes } from './routes/teams.js';
-import { statsRoutes } from './routes/stats.js';
+import { statsRoutes, globalStatsRoutes } from './routes/stats.js';
 import { adminRoutes } from './routes/admin.js';
 import { clawhubRoutes } from './routes/clawhub.js';
 
@@ -142,6 +142,7 @@ await app.register(packageRoutes, { prefix: '/api/v1/skills' });
 await app.register(categoryRoutes, { prefix: '/api/v1' });
 await app.register(teamRoutes, { prefix: '/api/v1/teams' });
 await app.register(statsRoutes, { prefix: '/api/v1/skills' });
+await app.register(globalStatsRoutes, { prefix: '/api/v1/stats' });
 await app.register(adminRoutes, { prefix: '/api/v1/admin' });
 await app.register(clawhubRoutes, { prefix: '/api/v1/clawhub' });
 
