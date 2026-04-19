@@ -4,6 +4,7 @@ import { AGENT_LABELS, type AgentType } from '@openskillhub/shared';
 import type { CategoryWithCount } from '@/lib/types';
 import { CATEGORY_ICONS } from '@/lib/constants';
 import Link from 'next/link';
+import HeroSearch from './HeroSearch';
 
 export default async function HomePage() {
   const [skills, categories] = await Promise.all([
@@ -27,6 +28,7 @@ export default async function HomePage() {
         <p className="hero-agents">
           支持 OpenCode · OpenClaw · Claude Code · Cursor · Goose · Amp
         </p>
+        <HeroSearch />
         <div className="hero-actions">
           <Link href="/skills" className="hero-btn-secondary">
             浏览技能
