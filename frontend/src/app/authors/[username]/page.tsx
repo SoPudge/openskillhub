@@ -45,19 +45,32 @@ export default async function AuthorPage({
   return (
     <div>
       {/* Header */}
-      <div
-        style={{
-          marginBottom: '2rem',
-          paddingBottom: '1.5rem',
-          borderBottom: '1px solid var(--border)',
-        }}
-      >
-        <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>
-          @{username}
-        </h1>
-        {displayName !== username && (
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem' }}>{displayName}</p>
-        )}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.06))',
+        borderRadius: '16px',
+        padding: '2rem',
+        marginBottom: '2rem',
+        border: '1px solid var(--border)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #667eea, #764ba2, #f093fb)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{
+            width: '3.5rem', height: '3.5rem', borderRadius: '50%',
+            background: 'linear-gradient(135deg, #667eea, #764ba2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '1.5rem', color: 'white', fontWeight: 700,
+          }}>
+            {(displayName || username).charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0 }}>@{username}</h1>
+            {displayName !== username && (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', margin: '0.15rem 0 0' }}>{displayName}</p>
+            )}
+          </div>
+        </div>
 
         {/* 统计卡片 */}
         <div
@@ -65,49 +78,30 @@ export default async function AuthorPage({
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
             gap: '0.75rem',
-            marginTop: '1.25rem',
             maxWidth: '500px',
           }}
         >
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              background: 'var(--bg-secondary)',
-              borderRadius: '8px',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent)' }}>
-              {skills.length}
+          {[
+            { value: skills.length, label: '技能' },
+            { value: totalDownloads.toLocaleString(), label: '总下载量' },
+            { value: allAgents.length, label: 'Agent' },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              style={{
+                padding: '0.75rem 1rem',
+                background: 'var(--bg-secondary)',
+                borderRadius: '10px',
+                textAlign: 'center',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent)' }}>
+                {stat.value}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{stat.label}</div>
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>技能</div>
-          </div>
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              background: 'var(--bg-secondary)',
-              borderRadius: '8px',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent)' }}>
-              {totalDownloads.toLocaleString()}
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>总下载量</div>
-          </div>
-          <div
-            style={{
-              padding: '0.75rem 1rem',
-              background: 'var(--bg-secondary)',
-              borderRadius: '8px',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent)' }}>
-              {allAgents.length}
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Agent</div>
-          </div>
+          ))}
         </div>
 
         {/* 涉及分类 */}
@@ -118,12 +112,14 @@ export default async function AuthorPage({
                 key={cat.slug}
                 href={`/skills?category=${cat.slug}&author=${username}`}
                 style={{
-                  padding: '0.2rem 0.6rem',
-                  background: 'var(--bg-secondary)',
-                  borderRadius: '12px',
+                  padding: '0.25rem 0.7rem',
+                  background: 'linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.08))',
+                  border: '1px solid rgba(102,126,234,0.15)',
+                  borderRadius: '14px',
                   fontSize: '0.8rem',
                   textDecoration: 'none',
-                  color: 'var(--text-secondary)',
+                  color: 'var(--accent)',
+                  fontWeight: 500,
                 }}
               >
                 {cat.name}
@@ -134,7 +130,8 @@ export default async function AuthorPage({
       </div>
 
       {/* 技能列表 */}
-      <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
+      <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <span style={{ width: '4px', height: '1.25rem', background: 'linear-gradient(180deg, #667eea, #764ba2)', borderRadius: '2px', display: 'inline-block' }} />
         发布的技能
       </h2>
 
@@ -148,43 +145,50 @@ export default async function AuthorPage({
             <Link
               key={skill.id}
               href={`/skills/${skill.name}`}
+              className="skill-card"
               style={{
                 border: '1px solid var(--border)',
-                borderRadius: '8px',
-                padding: '1rem',
+                borderRadius: '12px',
+                padding: '1.25rem',
                 display: 'block',
                 textDecoration: 'none',
                 color: 'inherit',
+                background: 'var(--bg-secondary)',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #667eea, #764ba2, #f093fb)', borderRadius: '12px 12px 0 0' }} />
               <div
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'baseline',
+                  alignItems: 'flex-start',
                 }}
               >
-                <h3 style={{ fontSize: '1.05rem' }}>{skill.displayName}</h3>
-                <span
-                  style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}
-                >
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 600 }}>{skill.displayName}</h3>
+                <span style={{
+                  fontSize: '0.75rem', fontWeight: 600,
+                  color: 'var(--accent)', background: 'var(--accent-bg)',
+                  padding: '0.15rem 0.5rem', borderRadius: '10px', whiteSpace: 'nowrap',
+                }}>
                   ↓ {skill.downloadCount}
                 </span>
               </div>
               <p
                 style={{
                   color: 'var(--text-secondary)',
-                  fontSize: '0.9rem',
-                  marginTop: '0.25rem',
+                  fontSize: '0.875rem',
+                  marginTop: '0.4rem',
                   lineHeight: '1.5',
                 }}
               >
-                {skill.description?.slice(0, 160)}
-                {(skill.description?.length ?? 0) > 160 ? '...' : ''}
+                {skill.description?.slice(0, 140)}
+                {(skill.description?.length ?? 0) > 140 ? '...' : ''}
               </p>
               <div
                 style={{
-                  marginTop: '0.5rem',
+                  marginTop: '0.75rem',
                   display: 'flex',
                   gap: '0.5rem',
                   fontSize: '0.8rem',
@@ -195,9 +199,12 @@ export default async function AuthorPage({
                 {skill.category && (
                   <span
                     style={{
-                      background: 'var(--bg-secondary)',
-                      padding: '0.1rem 0.4rem',
-                      borderRadius: '3px',
+                      background: 'var(--accent-bg)',
+                      color: 'var(--accent)',
+                      padding: '0.1rem 0.45rem',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
                     }}
                   >
                     {skill.category.name}
@@ -207,16 +214,18 @@ export default async function AuthorPage({
                   <span
                     key={tag.slug}
                     style={{
-                      background: 'var(--bg-secondary)',
-                      padding: '0.1rem 0.4rem',
-                      borderRadius: '3px',
+                      background: 'linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.06))',
+                      border: '1px solid rgba(102,126,234,0.12)',
+                      padding: '0.1rem 0.45rem',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
                     }}
                   >
                     #{tag.name}
                   </span>
                 ))}
                 {skill.versions && skill.versions[0] && (
-                  <span>v{skill.versions[0].version}</span>
+                  <span style={{ fontSize: '0.75rem' }}>v{skill.versions[0].version}</span>
                 )}
               </div>
             </Link>
