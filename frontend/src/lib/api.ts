@@ -1,4 +1,4 @@
-import { API_BASE } from './constants.js';
+import { API_BASE } from './constants';
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const controller = new AbortController();
