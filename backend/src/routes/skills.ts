@@ -87,6 +87,27 @@ export async function skillRoutes(app: FastifyInstance) {
     };
   });
 
+  // Search suggestions / autocomplete
+  app.get('/suggest', async (request, reply) => {
+    const q = (request.query as Record<string, string>).q?.trim();
+    if (!q || q.length < 1) return { suggestions: [] };
+
+    const rows = await prisma.skill.findMany({
+      where: {
+        visibility: 'public',
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { displayName: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      select: { name: true, displayName: true },
+      take: 8,
+      orderBy: { downloadCount: 'desc' },
+    });
+
+    return { suggestions: rows };
+  });
+
   // Get skill by name
   app.get('/:name', async (request, reply) => {
     const { name } = validateOrThrow(NameParamSchema, request.params);

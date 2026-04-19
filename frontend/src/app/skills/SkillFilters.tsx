@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Tag } from '@openskillhub/shared';
 import { AGENT_LABELS } from '@openskillhub/shared';
 import type { CategoryWithCount } from '@/lib/types';
@@ -74,24 +74,65 @@ export default function SkillFilters({
   const activeTags = currentTag ? currentTag.split(',') : [];
   const hasFilters = !!(currentCategory || currentAgent || currentTag || currentSort);
 
+  // Autocomplete state
+  const [inputValue, setInputValue] = useState(currentQ);
+  const [suggestions, setSuggestions] = useState<{ name: string; displayName: string }[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const fetchSuggestions = useCallback(async (q: string) => {
+    if (q.length < 1) { setSuggestions([]); return; }
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/skills/suggest?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setSuggestions(data.suggestions || []);
+    } catch { setSuggestions([]); }
+  }, []);
+
+  const onInputChange = useCallback((val: string) => {
+    setInputValue(val);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => fetchSuggestions(val), 200);
+  }, [fetchSuggestions]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (suggestRef.current && !suggestRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const selectSuggestion = useCallback((name: string) => {
+    setShowSuggestions(false);
+    router.push(`/skills/${name}`);
+  }, [router]);
+
+  const submitSearch = useCallback((q: string) => {
+    setShowSuggestions(false);
+    const params = new URLSearchParams(searchParams.toString());
+    if (q) params.set('q', q); else params.delete('q');
+    params.delete('page');
+    router.push(`/skills?${params.toString()}`);
+  }, [router, searchParams]);
+
   return (
     <div style={{ marginBottom: '1.5rem' }}>
       {/* 搜索栏 */}
-      <form
-        method="GET"
-        action="/skills"
-        style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}
-      >
+      {/* 搜索栏 + 自动补全 */}
+      <div ref={suggestRef} style={{ position: 'relative', display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
         {/* 保留现有筛选参数 */}
-        {currentCategory && <input type="hidden" name="category" value={currentCategory} />}
-        {currentAgent && <input type="hidden" name="agent" value={currentAgent} />}
-        {currentTag && <input type="hidden" name="tag" value={currentTag} />}
-        {currentSort && <input type="hidden" name="sort" value={currentSort} />}
         <input
           type="text"
-          name="q"
           placeholder="搜索技能..."
-          defaultValue={currentQ}
+          value={inputValue}
+          onChange={(e) => { onInputChange(e.target.value); setShowSuggestions(true); }}
+          onFocus={() => { if (suggestions.length) setShowSuggestions(true); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submitSearch(inputValue); } }}
           style={{
             flex: 1,
             padding: '0.5rem 1rem',
@@ -101,7 +142,8 @@ export default function SkillFilters({
           }}
         />
         <button
-          type="submit"
+          type="button"
+          onClick={() => submitSearch(inputValue)}
           style={{
             padding: '0.5rem 1.5rem',
             background: '#0070f3',
@@ -114,7 +156,32 @@ export default function SkillFilters({
         >
           搜索
         </button>
-      </form>
+        {showSuggestions && suggestions.length > 0 && (
+          <div style={{
+            position: 'absolute', top: '100%', left: 0, right: 0,
+            background: 'white', border: '1px solid #ddd', borderRadius: '6px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10,
+            marginTop: '4px', overflow: 'hidden',
+          }}>
+            {suggestions.map((s) => (
+              <button
+                key={s.name}
+                onClick={() => selectSuggestion(s.name)}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '0.5rem 1rem', border: 'none', background: 'none',
+                  cursor: 'pointer', fontSize: '0.9rem',
+                }}
+                onMouseEnter={(e) => { (e.target as HTMLElement).style.background = '#f5f5f5'; }}
+                onMouseLeave={(e) => { (e.target as HTMLElement).style.background = 'none'; }}
+              >
+                <span style={{ fontWeight: 500 }}>{s.displayName}</span>
+                <span style={{ color: '#999', marginLeft: '0.5rem', fontSize: '0.8rem' }}>{s.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* 筛选行 */}
       <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
