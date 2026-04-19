@@ -1,25 +1,15 @@
 import { apiFetch } from '@/lib/api';
 import type { PaginatedResponse, Skill } from '@openskillhub/shared';
 import type { CategoryWithCount } from '@/lib/types';
+import { CATEGORY_ICONS } from '@/lib/constants';
 import Link from 'next/link';
-
-const CATEGORY_ICONS: Record<string, string> = {
-  'dev-workflow': '⚙️',
-  'code-gen': '🔧',
-  docs: '📄',
-  devops: '🚀',
-  'data-db': '🗄️',
-  security: '🔒',
-  communication: '💬',
-  utilities: '🧰',
-};
 
 export default async function HomePage() {
   const [skills, categories] = await Promise.all([
-    apiFetch<PaginatedResponse<Skill>>('/skills?sort=downloads&limit=8')
+    apiFetch<PaginatedResponse<Skill>>('/skills?sort=downloads&limit=8', { next: { revalidate: 60 } } as RequestInit)
       .then((res) => res.data)
       .catch(() => [] as Skill[]),
-    apiFetch<CategoryWithCount[]>('/categories').catch(() => [] as CategoryWithCount[]),
+    apiFetch<CategoryWithCount[]>('/categories', { next: { revalidate: 300 } } as RequestInit).catch(() => [] as CategoryWithCount[]),
   ]);
 
   return (

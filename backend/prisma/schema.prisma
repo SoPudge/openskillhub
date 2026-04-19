@@ -182,5 +182,6 @@ model DownloadStat {
 
   @@index([skillPackageId])
   @@index([createdAt])
+  @@index([skillPackageId, createdAt])
   @@map("download_stats")
 }

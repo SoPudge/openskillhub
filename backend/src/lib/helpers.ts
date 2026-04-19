@@ -11,6 +11,7 @@ export async function requireAdmin(userId: string) {
   if (!user) throw new AppError(401, ErrorCode.AUTH_REQUIRED, 'Authentication required');
   if (user.banned) throw new AppError(403, ErrorCode.USER_BANNED, 'Account is banned');
   if (user.role !== 'admin') throw new AppError(403, ErrorCode.ADMIN_REQUIRED, 'Admin access required');
+  return user;
 }
 
 // ─── Skill Lookup ───────────────────────────────────────
@@ -62,20 +63,32 @@ export function slugifyTag(name: string): string {
 }
 
 export async function upsertTags(tags: string[]) {
-  return Promise.all(
-    tags.map(async (tagName) => {
-      const slug = slugifyTag(tagName);
-      const tag = await prisma.tag.upsert({
-        where: { slug },
-        update: {},
-        create: { name: tagName, slug },
-      });
-      return { tagId: tag.id };
-    }),
+  // Batch upsert: create missing tags in one transaction, then resolve IDs
+  const tagData = tags.map((name) => ({ name, slug: slugifyTag(name) }));
+
+  await prisma.$transaction(
+    tagData.map(({ name, slug }) =>
+      prisma.tag.upsert({ where: { slug }, update: {}, create: { name, slug } }),
+    ),
   );
+
+  const resolved = await prisma.tag.findMany({
+    where: { slug: { in: tagData.map((t) => t.slug) } },
+    select: { id: true },
+  });
+
+  return resolved.map((tag) => ({ tagId: tag.id }));
 }
 
 // ─── BigInt / Format Helpers ────────────────────────────
+
+export function buildSkillOrderBy(sort?: string): Record<string, string> {
+  if (sort === 'downloads') return { downloadCount: 'desc' };
+  if (sort === 'updated') return { updatedAt: 'desc' };
+  if (sort === 'name') return { name: 'asc' };
+  if (sort === 'created') return { createdAt: 'asc' };
+  return { createdAt: 'desc' };
+}
 
 export function normalizeFileSize(pkg: { fileSize: bigint | number }) {
   return { ...pkg, fileSize: Number(pkg.fileSize ?? 0) };

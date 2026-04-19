@@ -2,79 +2,57 @@
 
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { authApiFetch } from '@/lib/api';
+import type { Skill, ApiKey } from '@openskillhub/shared';
 
-import { API_BASE } from '@/lib/constants';
-
-interface Skill {
-  id: string;
-  name: string;
-  displayName: string;
-  description: string;
-  visibility: string;
-  downloadCount: number;
-  createdAt: string;
-  versions?: { version: string }[];
-}
-
-interface ApiKey {
-  id: string;
-  name: string;
-  keyPrefix: string;
-  lastUsedAt: string | null;
-  createdAt: string;
-}
+type DashboardSkill = Skill & { versions?: { version: string }[] };
 
 export default function DashboardPage() {
   const { user, token, loading: authLoading, logout } = useAuth();
   const router = useRouter();
-  const [skills, setSkills] = useState<Skill[]>([]);
+  const [skills, setSkills] = useState<DashboardSkill[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyResult, setNewKeyResult] = useState('');
   const [tab, setTab] = useState<'skills' | 'apikeys'>('skills');
   const [loading, setLoading] = useState(true);
 
-  const authFetch = useCallback(async (path: string, opts?: RequestInit) => {
-    const res = await fetch(`${API_BASE}${path}`, {
-      ...opts,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts?.headers },
-    });
-    if (res.status === 204) return null;
-    return res;
-  }, [token]);
+  const api = useMemo(() => token ? authApiFetch(token) : null, [token]);
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { router.push('/auth/login'); return; }
+    if (!user || !api) { router.push('/auth/login'); return; }
 
     Promise.all([
-      authFetch(`/skills?author=${user.username}&limit=100`).then((r) => r?.json()),
-      authFetch('/auth/api-keys').then((r) => r?.json()),
+      api<{ data: DashboardSkill[] }>(`/skills?author=${user.username}&limit=100`),
+      api<ApiKey[]>('/auth/api-keys'),
     ]).then(([skillsData, keysData]) => {
-      setSkills((skillsData as { data: Skill[] })?.data || []);
+      setSkills(skillsData?.data || []);
       setApiKeys(Array.isArray(keysData) ? keysData : []);
       setLoading(false);
     });
-  }, [user, authLoading, router, authFetch]);
+  }, [user, authLoading, router, api]);
 
   const createApiKey = async () => {
-    if (!newKeyName.trim()) return;
-    const res = await authFetch('/auth/api-keys', {
-      method: 'POST',
-      body: JSON.stringify({ name: newKeyName }),
-    });
-    if (res?.ok) {
-      const data = await res.json() as ApiKey & { key: string };
+    if (!newKeyName.trim() || !api) return;
+    try {
+      const data = await api<ApiKey & { key: string }>('/auth/api-keys', {
+        method: 'POST',
+        body: JSON.stringify({ name: newKeyName }),
+      });
       setNewKeyResult(data.key);
       setNewKeyName('');
-      setApiKeys((prev) => [{ id: data.id, name: newKeyName, keyPrefix: data.keyPrefix, lastUsedAt: null, createdAt: new Date().toISOString() }, ...prev]);
-    }
+      setApiKeys((prev) => [{ id: data.id, userId: user!.id, name: newKeyName, keyPrefix: data.keyPrefix, lastUsedAt: undefined, createdAt: new Date().toISOString() }, ...prev]);
+    } catch { /* ignore */ }
   };
 
   const deleteApiKey = async (id: string) => {
-    await authFetch(`/auth/api-keys/${id}`, { method: 'DELETE' });
-    setApiKeys((prev) => prev.filter((k) => k.id !== id));
+    if (!api) return;
+    try {
+      await api(`/auth/api-keys/${id}`, { method: 'DELETE' });
+      setApiKeys((prev) => prev.filter((k) => k.id !== id));
+    } catch { /* ignore */ }
   };
 
   if (authLoading || loading) {

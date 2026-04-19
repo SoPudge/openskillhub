@@ -1,8 +1,8 @@
 'use client';
 
 import { useAuth } from '@/lib/auth';
-import { API_BASE } from '@/lib/constants';
-import { useCallback, useEffect, useState } from 'react';
+import { authApiFetch } from '@/lib/api';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 
 interface AdminSkill {
@@ -34,54 +34,52 @@ export default function AdminSkillsPage() {
   const [page, setPage] = useState(1);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const adminFetch = useCallback(async (path: string, opts?: RequestInit) => {
-    return fetch(`${API_BASE}/admin${path}`, {
-      ...opts,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts?.headers },
-    });
-  }, [token]);
+  const api = useMemo(() => token ? authApiFetch(token) : null, [token]);
 
   const fetchSkills = useCallback(async () => {
+    if (!api) return;
     setLoading(true);
     const params = new URLSearchParams();
     if (query) params.set('q', query);
     params.set('page', String(page));
     params.set('limit', '20');
     try {
-      const res = await adminFetch(`/skills?${params.toString()}`);
-      if (res.ok) setResult(await res.json());
+      setResult(await api<SkillListResult>(`/admin/skills?${params.toString()}`));
     } catch { /* ignore */ }
     setLoading(false);
-  }, [adminFetch, query, page]);
+  }, [api, query, page]);
 
   useEffect(() => {
     if (token) fetchSkills();
   }, [token, fetchSkills]);
 
   const toggleFeatured = async (name: string, featured: boolean) => {
+    if (!api) return;
     setActionLoading(name);
     try {
-      const res = await adminFetch(`/skills/${name}`, { method: 'PATCH', body: JSON.stringify({ featured }) });
-      if (res.ok) await fetchSkills();
+      await api(`/admin/skills/${name}`, { method: 'PATCH', body: JSON.stringify({ featured }) });
+      await fetchSkills();
     } catch { /* ignore */ }
     setActionLoading(null);
   };
 
   const changeVisibility = async (name: string, visibility: string) => {
+    if (!api) return;
     setActionLoading(name);
     try {
-      const res = await adminFetch(`/skills/${name}`, { method: 'PATCH', body: JSON.stringify({ visibility }) });
-      if (res.ok) await fetchSkills();
+      await api(`/admin/skills/${name}`, { method: 'PATCH', body: JSON.stringify({ visibility }) });
+      await fetchSkills();
     } catch { /* ignore */ }
     setActionLoading(null);
   };
 
   const deleteSkill = async (name: string) => {
+    if (!api) return;
     if (!confirm(`确认删除技能 "${name}"？此操作不可撤销。`)) return;
     setActionLoading(name);
     try {
-      const res = await adminFetch(`/skills/${name}`, { method: 'DELETE' });
-      if (res.ok) await fetchSkills();
+      await api(`/admin/skills/${name}`, { method: 'DELETE' });
+      await fetchSkills();
     } catch { /* ignore */ }
     setActionLoading(null);
   };

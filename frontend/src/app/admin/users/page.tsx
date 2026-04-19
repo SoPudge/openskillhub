@@ -1,8 +1,8 @@
 'use client';
 
 import { useAuth } from '@/lib/auth';
-import { API_BASE } from '@/lib/constants';
-import { useCallback, useEffect, useState } from 'react';
+import { authApiFetch } from '@/lib/api';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 
 interface AdminUser {
   id: string;
@@ -33,14 +33,10 @@ export default function AdminUsersPage() {
   const [bannedFilter, setBannedFilter] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const adminFetch = useCallback(async (path: string, opts?: RequestInit) => {
-    return fetch(`${API_BASE}/admin${path}`, {
-      ...opts,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts?.headers },
-    });
-  }, [token]);
+  const api = useMemo(() => token ? authApiFetch(token) : null, [token]);
 
   const fetchUsers = useCallback(async () => {
+    if (!api) return;
     setLoading(true);
     const params = new URLSearchParams();
     if (query) params.set('q', query);
@@ -50,31 +46,32 @@ export default function AdminUsersPage() {
     params.set('limit', '20');
 
     try {
-      const res = await adminFetch(`/users?${params.toString()}`);
-      if (res.ok) setResult(await res.json());
+      setResult(await api<UserListResult>(`/admin/users?${params.toString()}`));
     } catch { /* ignore */ }
     setLoading(false);
-  }, [adminFetch, query, roleFilter, bannedFilter, page]);
+  }, [api, query, roleFilter, bannedFilter, page]);
 
   useEffect(() => {
     if (token) fetchUsers();
   }, [token, fetchUsers]);
 
   const updateUser = async (id: string, data: Record<string, unknown>) => {
+    if (!api) return;
     setActionLoading(id);
     try {
-      const res = await adminFetch(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
-      if (res.ok) await fetchUsers();
+      await api(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+      await fetchUsers();
     } catch { /* ignore */ }
     setActionLoading(null);
   };
 
   const deleteUser = async (id: string, username: string) => {
+    if (!api) return;
     if (!confirm(`确认删除用户 @${username}？此操作不可撤销。`)) return;
     setActionLoading(id);
     try {
-      const res = await adminFetch(`/users/${id}`, { method: 'DELETE' });
-      if (res.ok) await fetchUsers();
+      await api(`/admin/users/${id}`, { method: 'DELETE' });
+      await fetchUsers();
     } catch { /* ignore */ }
     setActionLoading(null);
   };

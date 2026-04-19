@@ -1,8 +1,8 @@
 'use client';
 
 import { useAuth } from '@/lib/auth';
-import { API_BASE } from '@/lib/constants';
-import { useCallback, useEffect, useState } from 'react';
+import { apiFetch, authApiFetch } from '@/lib/api';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 
 interface AdminCategory {
   id: string;
@@ -23,18 +23,11 @@ export default function AdminCategoriesPage() {
   const [showNew, setShowNew] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const adminFetch = useCallback(async (path: string, opts?: RequestInit) => {
-    return fetch(`${API_BASE}/admin${path}`, {
-      ...opts,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts?.headers },
-    });
-  }, [token]);
+  const api = useMemo(() => token ? authApiFetch(token) : null, [token]);
 
   const fetchCategories = useCallback(async () => {
     try {
-      // Use the public categories endpoint which already includes _count
-      const res = await fetch(`${API_BASE}/categories`);
-      if (res.ok) setCategories(await res.json());
+      setCategories(await apiFetch<AdminCategory[]>('/categories'));
     } catch { /* ignore */ }
     setLoading(false);
   }, []);
@@ -42,19 +35,16 @@ export default function AdminCategoriesPage() {
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
   const createCategory = async () => {
-    if (!newForm.name || !newForm.slug) return;
+    if (!newForm.name || !newForm.slug || !api) return;
     setActionLoading(true);
     try {
-      const res = await adminFetch('/categories', { method: 'POST', body: JSON.stringify(newForm) });
-      if (res.ok) {
-        setShowNew(false);
-        setNewForm({ name: '', slug: '', description: '', sortOrder: 0 });
-        await fetchCategories();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        alert((err as { error?: string }).error || '创建失败');
-      }
-    } catch { /* ignore */ }
+      await api('/admin/categories', { method: 'POST', body: JSON.stringify(newForm) });
+      setShowNew(false);
+      setNewForm({ name: '', slug: '', description: '', sortOrder: 0 });
+      await fetchCategories();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '创建失败');
+    }
     setActionLoading(false);
   };
 
@@ -64,23 +54,23 @@ export default function AdminCategoriesPage() {
   };
 
   const saveEdit = async (slug: string) => {
+    if (!api) return;
     setActionLoading(true);
     try {
-      const res = await adminFetch(`/categories/${slug}`, { method: 'PATCH', body: JSON.stringify(editForm) });
-      if (res.ok) {
-        setEditId(null);
-        await fetchCategories();
-      }
+      await api(`/admin/categories/${slug}`, { method: 'PATCH', body: JSON.stringify(editForm) });
+      setEditId(null);
+      await fetchCategories();
     } catch { /* ignore */ }
     setActionLoading(false);
   };
 
   const deleteCategory = async (slug: string, name: string) => {
+    if (!api) return;
     if (!confirm(`确认删除分类 "${name}"？关联的技能将被取消分类。`)) return;
     setActionLoading(true);
     try {
-      const res = await adminFetch(`/categories/${slug}`, { method: 'DELETE' });
-      if (res.ok) await fetchCategories();
+      await api(`/admin/categories/${slug}`, { method: 'DELETE' });
+      await fetchCategories();
     } catch { /* ignore */ }
     setActionLoading(false);
   };

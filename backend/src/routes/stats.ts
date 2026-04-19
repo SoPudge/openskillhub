@@ -26,14 +26,12 @@ export async function statsRoutes(app: FastifyInstance) {
     const since = new Date();
     since.setDate(since.getDate() - days);
 
-    // Get all package IDs for this skill
-    const packages = await prisma.skillPackage.findMany({
+    // Check if skill has any packages (without fetching all IDs)
+    const packageCount = await prisma.skillPackage.count({
       where: { skillVersion: { skillId: skill.id } },
-      select: { id: true },
     });
-    const packageIds = packages.map((p) => p.id);
 
-    if (packageIds.length === 0) {
+    if (packageCount === 0) {
       return {
         totalDownloads: Number(skill.downloadCount),
         period,
@@ -43,18 +41,20 @@ export async function statsRoutes(app: FastifyInstance) {
       };
     }
 
-    // Aggregate by time period using raw SQL for efficiency
+    // Aggregate by time period using raw SQL — join through skill_versions to avoid fetching IDs
     let truncExpr: string;
-    if (period === 'week') truncExpr = `date_trunc('week', created_at)`;
-    else if (period === 'month') truncExpr = `date_trunc('month', created_at)`;
-    else truncExpr = `date_trunc('day', created_at)`;
+    if (period === 'week') truncExpr = `date_trunc('week', ds.created_at)`;
+    else if (period === 'month') truncExpr = `date_trunc('month', ds.created_at)`;
+    else truncExpr = `date_trunc('day', ds.created_at)`;
 
     const timeline = await prisma.$queryRawUnsafe<{ date: Date; count: bigint }[]>(
       `SELECT ${truncExpr} AS date, COUNT(*)::bigint AS count
-       FROM download_stats
-       WHERE skill_package_id = ANY($1::uuid[]) AND created_at >= $2
+       FROM download_stats ds
+       JOIN skill_packages sp ON ds.skill_package_id = sp.id
+       JOIN skill_versions sv ON sp.skill_version_id = sv.id
+       WHERE sv.skill_id = $1::uuid AND ds.created_at >= $2
        GROUP BY date ORDER BY date ASC`,
-      packageIds,
+      skill.id,
       since,
     );
 
@@ -63,9 +63,10 @@ export async function statsRoutes(app: FastifyInstance) {
       `SELECT sp.agent_type, COUNT(*)::bigint AS count
        FROM download_stats ds
        JOIN skill_packages sp ON ds.skill_package_id = sp.id
-       WHERE sp.id = ANY($1::uuid[]) AND ds.created_at >= $2
+       JOIN skill_versions sv ON sp.skill_version_id = sv.id
+       WHERE sv.skill_id = $1::uuid AND ds.created_at >= $2
        GROUP BY sp.agent_type ORDER BY count DESC`,
-      packageIds,
+      skill.id,
       since,
     );
 

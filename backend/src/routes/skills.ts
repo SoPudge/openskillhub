@@ -5,7 +5,7 @@ import { authenticate, optionalAuthenticate } from './auth.js';
 import { AGENT_TYPES } from '@openskillhub/shared';
 import { validate, SkillCreateSchema, SkillUpdateSchema, SkillListQuerySchema, CheckUpdatesSchema, NameParamSchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
-import { getSkillOrThrow, assertSkillAuthor, upsertTags, formatSkill } from '../lib/helpers.js';
+import { getSkillOrThrow, assertSkillAuthor, upsertTags, formatSkill, buildSkillOrderBy } from '../lib/helpers.js';
 
 const storage = createStorage();
 
@@ -68,11 +68,7 @@ export async function skillRoutes(app: FastifyInstance) {
       where.id = { in: matchingIds.map((r) => r.id) };
     }
 
-    let orderBy: Record<string, string> = { createdAt: 'desc' };
-    if (sort === 'downloads') orderBy = { downloadCount: 'desc' };
-    else if (sort === 'updated') orderBy = { updatedAt: 'desc' };
-    else if (sort === 'name') orderBy = { name: 'asc' };
-    else if (sort === 'created') orderBy = { createdAt: 'asc' };
+    const orderBy = buildSkillOrderBy(sort);
 
     const [skills, total] = await Promise.all([
       prisma.skill.findMany({

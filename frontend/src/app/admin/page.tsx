@@ -1,8 +1,8 @@
 'use client';
 
 import { useAuth } from '@/lib/auth';
-import { API_BASE } from '@/lib/constants';
-import { useCallback, useEffect, useState } from 'react';
+import { authApiFetch } from '@/lib/api';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 
 interface AdminStats {
   totalUsers: number;
@@ -19,15 +19,15 @@ export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const api = useMemo(() => token ? authApiFetch(token) : null, [token]);
+
   const fetchStats = useCallback(async () => {
+    if (!api) return;
     try {
-      const res = await fetch(`${API_BASE}/admin/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) setStats(await res.json());
+      setStats(await api<AdminStats>('/admin/stats'));
     } catch { /* ignore */ }
     setLoading(false);
-  }, [token]);
+  }, [api]);
 
   useEffect(() => {
     if (token) fetchStats();

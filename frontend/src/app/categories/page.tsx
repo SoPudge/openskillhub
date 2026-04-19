@@ -1,22 +1,12 @@
 import { apiFetch } from '@/lib/api';
 import type { CategoryWithCount } from '@/lib/types';
+import { CATEGORY_ICONS } from '@/lib/constants';
 import Link from 'next/link';
-
-const CATEGORY_ICONS: Record<string, string> = {
-  'dev-workflow': '⚙️',
-  'code-gen': '🔧',
-  docs: '📄',
-  devops: '🚀',
-  'data-db': '🗄️',
-  security: '🔒',
-  communication: '💬',
-  utilities: '🧰',
-};
 
 export default async function CategoriesPage() {
   let categories: CategoryWithCount[] = [];
   try {
-    categories = await apiFetch<CategoryWithCount[]>('/categories');
+    categories = await apiFetch<CategoryWithCount[]>('/categories', { next: { revalidate: 300 } } as RequestInit);
   } catch {
     // API not available
   }

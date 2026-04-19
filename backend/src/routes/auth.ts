@@ -170,6 +170,7 @@ async function resolveCredentials(
   if (typeof apiKeyHeader === 'string') {
     const keys = await prisma.apiKey.findMany({
       where: { keyPrefix: apiKeyHeader.slice(0, 8) },
+      take: 5, // Limit bcrypt comparisons
     });
     for (const key of keys) {
       if (await bcrypt.compare(apiKeyHeader, key.keyHash)) {

@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
+import { createStorage } from '../storage/index.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
 import { authenticate } from './auth.js';
-import { requireAdmin } from '../lib/helpers.js';
-import { formatSkill, slugifyTag } from '../lib/helpers.js';
+import { requireAdmin, formatSkill, slugifyTag, buildSkillOrderBy } from '../lib/helpers.js';
 import {
   validate,
   AdminUserUpdateSchema,
@@ -200,11 +200,7 @@ export async function adminRoutes(app: FastifyInstance) {
     if (category) where.category = { slug: category };
     if (author) where.author = { username: author };
 
-    const orderBy: Record<string, string> =
-      sort === 'downloads' ? { downloadCount: 'desc' }
-        : sort === 'name' ? { name: 'asc' }
-          : sort === 'updated' ? { updatedAt: 'desc' }
-            : { createdAt: 'desc' };
+    const orderBy = buildSkillOrderBy(sort);
 
     const [data, total] = await Promise.all([
       prisma.skill.findMany({
@@ -255,8 +251,20 @@ export async function adminRoutes(app: FastifyInstance) {
     });
     if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
 
+    // Collect storage paths before cascading delete
+    const filePaths = skill.versions.flatMap((v) => v.packages.map((p) => p.filePath));
+
     await prisma.skill.delete({ where: { name } });
-    request.log.info({ skillId: skill.id, skillName: name }, 'Admin force-deleted skill');
+
+    // Best-effort cleanup of stored files
+    const storage = createStorage();
+    const results = await Promise.allSettled(filePaths.map((fp) => storage.delete(fp)));
+    const failed = results.filter((r) => r.status === 'rejected');
+    if (failed.length > 0) {
+      request.log.error({ skillName: name, failedCount: failed.length }, 'Admin delete: storage cleanup partially failed');
+    }
+
+    request.log.info({ skillId: skill.id, skillName: name, packageCount: filePaths.length }, 'Admin force-deleted skill');
     return { success: true };
   });
 

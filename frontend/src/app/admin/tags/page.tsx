@@ -1,8 +1,8 @@
 'use client';
 
 import { useAuth } from '@/lib/auth';
-import { API_BASE } from '@/lib/constants';
-import { useCallback, useEffect, useState } from 'react';
+import { authApiFetch } from '@/lib/api';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 
 interface AdminTag {
   id: string;
@@ -22,44 +22,38 @@ export default function AdminTagsPage() {
   const [showMerge, setShowMerge] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const adminFetch = useCallback(async (path: string, opts?: RequestInit) => {
-    return fetch(`${API_BASE}/admin${path}`, {
-      ...opts,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts?.headers },
-    });
-  }, [token]);
+  const api = useMemo(() => token ? authApiFetch(token) : null, [token]);
 
   const fetchTags = useCallback(async () => {
+    if (!api) return;
     try {
-      const res = await adminFetch('/tags');
-      if (res.ok) setTags(await res.json());
+      setTags(await api<AdminTag[]>('/admin/tags'));
     } catch { /* ignore */ }
     setLoading(false);
-  }, [adminFetch]);
+  }, [api]);
 
   useEffect(() => {
     if (token) fetchTags();
   }, [token, fetchTags]);
 
   const renameTag = async (slug: string) => {
-    if (!editName.trim()) return;
+    if (!editName.trim() || !api) return;
     setActionLoading(true);
     try {
-      const res = await adminFetch(`/tags/${slug}`, { method: 'PATCH', body: JSON.stringify({ name: editName }) });
-      if (res.ok) {
-        setEditSlug(null);
-        await fetchTags();
-      }
+      await api(`/admin/tags/${slug}`, { method: 'PATCH', body: JSON.stringify({ name: editName }) });
+      setEditSlug(null);
+      await fetchTags();
     } catch { /* ignore */ }
     setActionLoading(false);
   };
 
   const deleteTag = async (slug: string, name: string) => {
+    if (!api) return;
     if (!confirm(`确认删除标签 "${name}"？将从所有技能中移除。`)) return;
     setActionLoading(true);
     try {
-      const res = await adminFetch(`/tags/${slug}`, { method: 'DELETE' });
-      if (res.ok) await fetchTags();
+      await api(`/admin/tags/${slug}`, { method: 'DELETE' });
+      await fetchTags();
     } catch { /* ignore */ }
     setActionLoading(false);
   };
@@ -71,23 +65,20 @@ export default function AdminTagsPage() {
   };
 
   const executeMerge = async () => {
-    if (mergeSource.length === 0 || !mergeTarget.trim()) return;
+    if (mergeSource.length === 0 || !mergeTarget.trim() || !api) return;
     setActionLoading(true);
     try {
-      const res = await adminFetch('/tags/merge', {
+      await api('/admin/tags/merge', {
         method: 'POST',
         body: JSON.stringify({ source: mergeSource, target: mergeTarget }),
       });
-      if (res.ok) {
-        setMergeSource([]);
-        setMergeTarget('');
-        setShowMerge(false);
-        await fetchTags();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        alert((err as { error?: string }).error || '合并失败');
-      }
-    } catch { /* ignore */ }
+      setMergeSource([]);
+      setMergeTarget('');
+      setShowMerge(false);
+      await fetchTags();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '合并失败');
+    }
     setActionLoading(false);
   };
 
