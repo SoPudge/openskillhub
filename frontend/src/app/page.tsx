@@ -114,7 +114,7 @@ export default async function HomePage() {
           <p style={{ color: 'var(--text-muted)' }}>暂无技能发布，启动后端并发布你的第一个技能！</p>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-            {(skills as (Skill & { versions?: { packages: { agentType: string }[] }[] })[]).map((skill) => {
+            {(skills as (Skill & { author?: { username: string; displayName?: string }; versions?: { packages: { agentType: string }[] }[] })[]).map((skill) => {
               const agents = [...new Set(skill.versions?.flatMap((v) => v.packages.map((p) => p.agentType)) ?? [])];
               return (
               <Link
@@ -123,21 +123,38 @@ export default async function HomePage() {
                 className="skill-card"
                 style={{
                   border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  padding: '1rem',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
                   display: 'block',
                   textDecoration: 'none',
                   color: 'inherit',
+                  background: 'var(--bg-secondary)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                <h3>{skill.displayName}</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                  {skill.description?.slice(0, 120)}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #667eea, #764ba2, #f093fb)', borderRadius: '12px 12px 0 0' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 600 }}>{skill.displayName}</h3>
+                  <span style={{
+                    fontSize: '0.75rem', fontWeight: 600,
+                    color: 'var(--accent)', background: 'var(--accent-bg)',
+                    padding: '0.15rem 0.5rem', borderRadius: '10px', whiteSpace: 'nowrap',
+                  }}>
+                    ↓ {skill.downloadCount}
+                  </span>
+                </div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.4rem', lineHeight: 1.5 }}>
+                  {skill.description?.slice(0, 100)}{(skill.description?.length ?? 0) > 100 ? '...' : ''}
                 </p>
-                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <span>↓ {skill.downloadCount}</span>
+                <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {skill.author && (
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      @{skill.author.username}
+                    </span>
+                  )}
                   {agents.map((a) => (
-                    <span key={a} style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: '0.1rem 0.4rem', borderRadius: '3px', fontSize: '0.7rem' }}>
+                    <span key={a} style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: '0.125rem 0.45rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 500 }}>
                       {AGENT_LABELS[a as AgentType] || a}
                     </span>
                   ))}
