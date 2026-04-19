@@ -164,7 +164,6 @@ openskillhub/
   - 净减 88 行代码 (212 insertions, 300 deletions)
 
 ### 🔶 下一步待做
-- **Prisma 迁移**: `downloadCount`/`fileSize` BigInt 变更尚未生成 migration，需在远程服务器执行 `pnpm --filter backend prisma migrate dev`
 - Phase 6: 多 Agent 适配完善 (OpenClaw/Claude Code/Cursor 安装路径)
 - Phase 7: S3 存储、Docker 镜像、CI/CD
 
@@ -174,7 +173,7 @@ openskillhub/
 - 前端 `tsconfig.json` 需显式 `baseUrl: "."` 覆盖 monorepo 基础配置
 - 远端 `NEXT_PUBLIC_API_URL` 和 `CORS_ORIGIN` 需设为 `http://192.168.20.199:3001/api/v1` 和 `http://192.168.20.199:3000`（已配置）
 - 远端多个后端进程残留时需 `pkill -f "tsx.*app.ts"` 清理后重启
-- `downloadCount` / `fileSize` BigInt 迁移待执行 (schema 已改，migration 未创建)
+- `downloadCount` / `fileSize` BigInt 迁移已完成 (2026-04-20)
 
 ### 测试数据
 - **admin 账号**: admin@openskillhub.dev / admin12345
