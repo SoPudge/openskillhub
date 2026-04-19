@@ -6,6 +6,19 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import SkillFilters from './SkillFilters';
 
+function highlightText(text: string, query?: string) {
+  if (!query || !text) return text;
+  const words = query.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return text;
+  const pattern = new RegExp(`(${words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
+  const parts = text.split(pattern);
+  return parts.map((part, i) =>
+    pattern.test(part)
+      ? <mark key={i} style={{ background: '#fff3b0', padding: '0 1px', borderRadius: '2px' }}>{part}</mark>
+      : part
+  );
+}
+
 export default async function SkillsPage({
   searchParams,
 }: {
@@ -98,7 +111,7 @@ export default async function SkillsPage({
                     alignItems: 'baseline',
                   }}
                 >
-                  <h3 style={{ fontSize: '1.05rem' }}>{skill.displayName}</h3>
+                  <h3 style={{ fontSize: '1.05rem' }}>{highlightText(skill.displayName, params.q)}</h3>
                   <span style={{ fontSize: '0.8rem', color: '#999', whiteSpace: 'nowrap' }}>
                     ↓ {skill.downloadCount}
                   </span>
@@ -111,8 +124,11 @@ export default async function SkillsPage({
                     lineHeight: '1.5',
                   }}
                 >
-                  {skill.description?.slice(0, 160)}
-                  {(skill.description?.length ?? 0) > 160 ? '...' : ''}
+                  {(() => {
+                    const desc = skill.description?.slice(0, 160) ?? '';
+                    const ellipsis = (skill.description?.length ?? 0) > 160 ? '...' : '';
+                    return <>{highlightText(desc, params.q)}{ellipsis}</>;
+                  })()}
                 </p>
                 {/* 元信息行 */}
                 <div
