@@ -165,7 +165,7 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ na
 
       {/* ── Versions ── */}
       <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>版本历史</h2>
-      {!skill.versions?.length
+      {!skill.versions?.length ? (
         <p style={{ color: '#999' }}>暂无版本发布。</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
