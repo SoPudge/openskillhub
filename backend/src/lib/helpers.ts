@@ -115,13 +115,28 @@ export async function upsertTags(tags: string[]) {
 // ─── Full-Text Search ───────────────────────────────────
 
 export async function fullTextSearchIds(q: string): Promise<string[]> {
-  const tsQuery = q.trim().split(/\s+/).map((w) => w.replace(/[^\w-]/g, '')).filter(Boolean).map((w) => `${w}:*`).join(' & ');
-  if (!tsQuery) return [];
-  const rows = await prisma.$queryRawUnsafe<{ id: string }[]>(
-    `SELECT id FROM skills WHERE search_vector @@ to_tsquery('english', $1)`,
-    tsQuery,
+  const trimmed = q.trim();
+  if (!trimmed) return [];
+
+  // Build tsquery for 'simple' config (supports CJK + Latin)
+  const words = trimmed.split(/\s+/).map((w) => w.replace(/[^\p{L}\p{N}_-]/gu, '')).filter(Boolean);
+  const tsQuery = words.map((w) => `${w}:*`).join(' & ');
+
+  if (tsQuery) {
+    const rows = await prisma.$queryRawUnsafe<{ id: string }[]>(
+      `SELECT id FROM skills WHERE search_vector @@ to_tsquery('simple', $1)`,
+      tsQuery,
+    );
+    if (rows.length > 0) return rows.map((r) => r.id);
+  }
+
+  // ILIKE fallback for partial / CJK matches not caught by tsvector
+  const pattern = `%${trimmed.replace(/[%_\\]/g, '\\$&')}%`;
+  const fallbackRows = await prisma.$queryRawUnsafe<{ id: string }[]>(
+    `SELECT id FROM skills WHERE name ILIKE $1 OR display_name ILIKE $1 OR description ILIKE $1 LIMIT 200`,
+    pattern,
   );
-  return rows.map((r) => r.id);
+  return fallbackRows.map((r) => r.id);
 }
 
 // ─── BigInt / Format Helpers ────────────────────────────
