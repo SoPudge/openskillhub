@@ -71,8 +71,8 @@ export default async function HomePage() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-              gap: '0.75rem',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+              gap: '1rem',
             }}
           >
             {categories.map((cat) => (
@@ -82,19 +82,29 @@ export default async function HomePage() {
                 className="category-card"
                 style={{
                   border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  padding: '0.75rem 1rem',
+                  borderRadius: '12px',
+                  padding: '1rem 1.25rem',
                   textDecoration: 'none',
                   color: 'inherit',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
+                  gap: '0.85rem',
+                  background: 'var(--bg-secondary)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                <span>{CATEGORY_ICONS[cat.slug] || '📦'}</span>
-                <div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{cat.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{cat._count.skills} 个技能</div>
+                <span style={{
+                  fontSize: '1.5rem',
+                  width: '2.75rem', height: '2.75rem',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, rgba(102,126,234,0.12), rgba(118,75,162,0.12))',
+                  flexShrink: 0,
+                }}>{CATEGORY_ICONS[cat.slug] || '📦'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.925rem', fontWeight: 600 }}>{cat.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{cat._count.skills} 个技能</div>
                 </div>
               </Link>
             ))}
