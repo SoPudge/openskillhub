@@ -14,6 +14,7 @@ import { authRoutes } from './routes/auth.js';
 import { teamRoutes } from './routes/teams.js';
 import { statsRoutes } from './routes/stats.js';
 import { adminRoutes } from './routes/admin.js';
+import { clawhubRoutes } from './routes/clawhub.js';
 
 import { AppError, mapPrismaError, ErrorCode } from './lib/errors.js';
 
@@ -142,6 +143,7 @@ await app.register(categoryRoutes, { prefix: '/api/v1' });
 await app.register(teamRoutes, { prefix: '/api/v1/teams' });
 await app.register(statsRoutes, { prefix: '/api/v1/skills' });
 await app.register(adminRoutes, { prefix: '/api/v1/admin' });
+await app.register(clawhubRoutes, { prefix: '/api/v1/clawhub' });
 
 const port = Number(process.env.SERVER_PORT) || 3001;
 const host = process.env.SERVER_HOST || '0.0.0.0';

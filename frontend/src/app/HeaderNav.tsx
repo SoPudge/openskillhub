@@ -13,6 +13,7 @@ export function HeaderNav() {
       </Link>
       <Link href="/skills">技能</Link>
       <Link href="/categories">分类</Link>
+      <Link href="/clawhub" style={{ color: '#8b5cf6' }}>ClawHub</Link>
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
         {loading ? null : user ? (
           <>
