@@ -28,7 +28,7 @@ openskillhub/
 ├── backend/              # Fastify API 服务 (port 3001)
 │   ├── src/
 │   │   ├── app.ts        # 入口 + 中间件 + rate-limit + 启动校验
-│   │   ├── routes/       # auth, skills, versions, packages, categories, teams, stats
+│   │   ├── routes/       # auth, skills, versions, packages, categories, teams, stats, admin
 │   │   ├── storage/      # 抽象层: local / s3
 │   │   └── lib/
 │   │       ├── prisma.ts # PrismaClient 单例
@@ -38,7 +38,7 @@ openskillhub/
 │   └── prisma/           # schema + migrations + seed
 ├── frontend/             # Next.js 前端 (port 3000)
 │   └── src/
-│       ├── app/          # 10 页面: 首页/列表/详情/分类/作者/团队/登录/注册/Dashboard
+│       ├── app/          # 15 页面: 首页/列表/详情/分类/作者/团队/登录/注册/Dashboard/Admin(5)
 │       └── lib/          # API client, AuthProvider, hooks, constants, types
 ├── packages/
 │   ├── shared/           # 类型 + 常量
@@ -62,13 +62,13 @@ openskillhub/
 - **仓库**: https://github.com/SoPudge/openskillhub.git
 - **分支**: `main` (稳定), `dev` (开发)
 
-## API 端点 (22 个，全部可用)
+## API 端点 (36 个，全部可用)
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | POST | /auth/register | 注册 (email+username+password) |
-| POST | /auth/login | 登录 → JWT |
-| GET | /auth/me | 当前用户 |
+| POST | /auth/login | 登录 → JWT (含 role, banned 检查) |
+| GET | /auth/me | 当前用户 (含 role) |
 | POST/GET/DELETE | /auth/api-keys | API Key 管理 |
 | GET | /skills | 全文搜索/列表 (q→tsvector, category, tag, agent, sort, page) |
 | GET | /skills/:name | 详情 |
@@ -88,6 +88,21 @@ openskillhub/
 | GET | /teams/:slug/members | 成员列表 |
 | POST | /teams/:slug/members | 添加成员 (owner/admin) |
 | DELETE | /teams/:slug/members/:username | 移除成员 (owner/admin/自己离开) |
+| **GET** | **/admin/stats** | **系统概览 (30天趋势)** |
+| **GET** | **/admin/users** | **用户列表 (搜索+角色+封禁筛选)** |
+| **GET** | **/admin/users/:id** | **用户详情** |
+| **PATCH** | **/admin/users/:id** | **修改用户 (role/banned/displayName)** |
+| **DELETE** | **/admin/users/:id** | **删除用户** |
+| **GET** | **/admin/skills** | **技能列表 (含私有)** |
+| **PATCH** | **/admin/skills/:name** | **修改技能 (featured/visibility)** |
+| **DELETE** | **/admin/skills/:name** | **删除技能** |
+| **POST** | **/admin/categories** | **创建分类** |
+| **PATCH** | **/admin/categories/:slug** | **修改分类** |
+| **DELETE** | **/admin/categories/:slug** | **删除分类** |
+| **GET** | **/admin/tags** | **标签列表** |
+| **PATCH** | **/admin/tags/:slug** | **重命名标签** |
+| **POST** | **/admin/tags/merge** | **合并标签** |
+| **DELETE** | **/admin/tags/:slug** | **删除标签** |
 
 ## 当前进度 (最后更新: 2026-04-19)
 
@@ -97,8 +112,19 @@ openskillhub/
 - **Phase 3 全部**: 分类/标签/筛选、**PG 全文搜索**、**搜索筛选 UI**(分类下拉+Agent+排序+标签)、**分类导航页**、首页分类区
 - **Phase 4 全部**: check-updates API、local-skill update/rollback、**下载统计 API**、**SVG 趋势图**(30天/90天/26周/12月)、**作者面板**(`/authors/[username]`)
 - **Phase 5 全部**: 团队 CRUD API + 成员管理、**可见性访问控制** (public/team/private, optionalAuthenticate)、**团队页面** (`/teams/[slug]`)、技能创建支持 teamId + 成员校验
+- **管理后台 (2026-04-19)**:
+  - **DB Schema**: User 新增 `role` (默认 "user") + `banned` 字段; Skill 新增 `featured` 字段
+  - **后端 14 个 Admin API**: `/api/v1/admin` 前缀，pre-handler authenticate + requireAdmin 守卫
+    - Stats: 系统概览 (用户/技能/下载量 + 30天注册/下载趋势)
+    - Users: 列表搜索 (角色+封禁筛选) / 详情 / 修改 (role/banned/displayName) / 删除
+    - Skills: 列表 (含私有) / 修改 (featured/visibility) / 删除
+    - Categories: 创建 / 修改 / 删除
+    - Tags: 列表 / 重命名 / 合并 / 删除
+  - **前端 5 个 Admin 页面**: layout (侧边栏+角色守卫) + 概览 (SVG趋势图) + 用户管理 + 技能管理 + 分类管理 + 标签管理
+  - **Auth 增强**: 登录封禁检查、响应含 role、HeaderNav 管理员入口链接
+  - **远程部署完成**: 迁移已执行, admin 用户已设置 (admin@openskillhub.dev), 后端/前端已重启
 - **安全加固**: JWT 强制校验、路径穿越增强、YAML DoS 防护、注册校验、下载原子性、N+1 修复、优雅退出、**@fastify/rate-limit (4 级限速: 全局/登录/上传/统计)**、**Zod 请求校验 (18 个 schema)**、**FTS 注入防护**、**trustProxy**、**团队角色升级保护**、**前端 API 超时控制**、**downloadCount 索引**
-- **前端 (10 页面)**: 首页、技能列表(筛选)、技能详情(图表)、分类导航、作者面板、团队页面、登录、注册、Dashboard
+- **前端 (15 页面)**: 首页、技能列表(筛选)、技能详情(图表)、分类导航、作者面板、团队页面、登录、注册、Dashboard、**Admin 概览/用户管理/技能管理/分类管理/标签管理**
 - **代码质量优化 (2026-04-15)**:
   - 后端: 认证逻辑抽取 `resolveCredentials()` 消除重复、`USER_SELECT` 常量统一用户字段选择、技能删除时 storage 文件清理、版本/成员列表分页 (`PaginationSchema`)、PATCH 技能支持 tags 更新、teams.ts 全面 Zod 校验 (`SlugParamSchema`)、`downloadCount`/`fileSize` 改 BigInt (待迁移)
   - 前端: `API_BASE` 常量提取至 `lib/constants.ts`、`CategoryWithCount`/`SkillWithMeta`/`TeamDetail` 类型整合至 `lib/types.ts`、`AGENT_LABELS` 移入 shared 包统一引用、`SkillFilters` 使用 `AGENT_LABELS` 生成选项
