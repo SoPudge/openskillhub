@@ -3,7 +3,7 @@ dist/
 .next/
 .env
 .env.local
-storage/
+/storage/
 logs/
 *.tgz
 .turbo/
