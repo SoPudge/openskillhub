@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AGENT_LABELS } from '@openskillhub/shared';
+import { AGENT_LABELS, type AgentType } from '@openskillhub/shared';
 
 import { API_BASE } from '@/lib/constants';
 
@@ -213,7 +213,7 @@ export default function DownloadChart({ skillName }: { skillName: string }) {
                     display: 'inline-block',
                   }}
                 />
-                <span>{AGENT_LABELS[a.agentType] || a.agentType}</span>
+                <span>{AGENT_LABELS[a.agentType as AgentType] || a.agentType}</span>
                 <span style={{ color: '#999' }}>({a.count})</span>
               </div>
             ))}
@@ -237,7 +237,7 @@ export default function DownloadChart({ skillName }: { skillName: string }) {
                     AGENT_COLORS[a.agentType] || '#999',
                   minWidth: 2,
                 }}
-                title={`${AGENT_LABELS[a.agentType] || a.agentType}: ${a.count}`}
+                title={`${AGENT_LABELS[a.agentType as AgentType] || a.agentType}: ${a.count}`}
               />
             ))}
           </div>

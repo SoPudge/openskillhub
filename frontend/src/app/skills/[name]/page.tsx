@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import DownloadChart from './DownloadChart';
-import { AGENT_LABELS } from '@openskillhub/shared';
+import { AGENT_LABELS, type AgentType } from '@openskillhub/shared';
 import { API_BASE } from '@/lib/constants';
 import type { SkillWithMeta } from '@/lib/types';
 
@@ -154,7 +154,7 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ na
                     textDecoration: 'none',
                   }}
                 >
-                  ↓ {AGENT_LABELS[pkg.agentType] || pkg.agentType}
+                  ↓ {AGENT_LABELS[pkg.agentType as AgentType] || pkg.agentType}
                   <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>({formatBytes(pkg.fileSize)})</span>
                 </a>
               ))}
@@ -206,7 +206,7 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ na
                     <a
                       key={pkg.agentType}
                       href={`${API_BASE}/skills/${skill.name}/versions/${v.version}/packages/${pkg.agentType}`}
-                      title={`SHA256: ${pkg.checksumSha256}`}
+                      title={pkg.checksumSha256 ? `SHA256: ${pkg.checksumSha256}` : undefined}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -220,7 +220,7 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ na
                         background: '#fafafa',
                       }}
                     >
-                      ↓ {AGENT_LABELS[pkg.agentType] || pkg.agentType}
+                      ↓ {AGENT_LABELS[pkg.agentType as AgentType] || pkg.agentType}
                       <span style={{ color: '#999' }}>({formatBytes(pkg.fileSize)})</span>
                     </a>
                   ))}
