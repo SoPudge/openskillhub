@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import DownloadChart from './DownloadChart';
-import { AGENT_LABELS, type AgentType } from '@openskillhub/shared';
+import { AGENT_LABELS, AGENT_META, type AgentType } from '@openskillhub/shared';
 import { API_BASE } from '@/lib/constants';
 import type { SkillWithMeta } from '@/lib/types';
 
@@ -71,20 +71,28 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ na
 
       {/* ── Supported Agents ── */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
-        {Object.entries(AGENT_LABELS).map(([key, label]) => (
-          <span
-            key={key}
-            style={{
-              padding: '0.25rem 0.75rem',
-              borderRadius: '4px',
-              fontSize: '0.85rem',
-              background: allAgents.includes(key) ? '#e6f4ea' : '#f5f5f5',
-              color: allAgents.includes(key) ? '#137333' : '#bbb',
-            }}
-          >
-            {label} {allAgents.includes(key) ? '✓' : '—'}
-          </span>
-        ))}
+        {Object.entries(AGENT_META).map(([key, meta]) => {
+          const supported = allAgents.includes(key);
+          return (
+            <a
+              key={key}
+              href={meta.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={supported ? meta.description : `${meta.label} — 尚无包`}
+              style={{
+                padding: '0.25rem 0.75rem',
+                borderRadius: '4px',
+                fontSize: '0.85rem',
+                background: supported ? '#e6f4ea' : '#f5f5f5',
+                color: supported ? '#137333' : '#bbb',
+                textDecoration: 'none',
+              }}
+            >
+              {meta.label} {supported ? '✓' : '—'}
+            </a>
+          );
+        })}
       </div>
 
       {/* ── Install Guide ── */}
@@ -124,12 +132,46 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ na
             </code>
             {latestVersion && (
               <code style={{ display: 'block', padding: '0.6rem 1rem', background: '#1e1e1e', color: '#d4d4d4', borderRadius: '6px', fontSize: '0.85rem', fontFamily: 'monospace' }}>
-                <span style={{ color: '#608b4e' }}># 安装指定版本</span>
-                <br />osh.sh install {skill.name} --version {latestVersion.version}
+                <span style={{ color: '#608b4e' }}># 指定 Agent 安装</span>
+                <br />osh.sh install {skill.name} --agent opencode
               </code>
             )}
           </div>
         </div>
+
+        {/* Per-Agent Install Paths */}
+        {allAgents.length > 0 && (
+          <div style={{ marginBottom: '1.25rem' }}>
+            <h3 style={{ fontSize: '1rem', color: '#333', marginBottom: '0.5rem' }}>
+              📂 各 Agent 安装路径
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {allAgents.map((agentKey) => {
+                const meta = AGENT_META[agentKey as AgentType];
+                if (!meta) return null;
+                return (
+                  <div key={agentKey} style={{ padding: '0.75rem 1rem', border: '1px solid #e8e8e8', borderRadius: '8px', background: '#fafafa' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                      <strong style={{ fontSize: '0.9rem' }}>
+                        <a href={meta.url} target="_blank" rel="noopener noreferrer" style={{ color: '#0070f3', textDecoration: 'none' }}>
+                          {meta.label}
+                        </a>
+                      </strong>
+                      <span style={{ fontSize: '0.75rem', color: '#999' }}>{meta.description}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      {meta.installPaths.map((p) => (
+                        <code key={p} style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', background: '#e8e8e8', borderRadius: '4px' }}>
+                          {p}{skill.name}/
+                        </code>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Direct Download */}
         {latestVersion && latestVersion.packages.length > 0 && (

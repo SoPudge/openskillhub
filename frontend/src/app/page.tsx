@@ -1,5 +1,6 @@
 import { apiFetch } from '@/lib/api';
 import type { PaginatedResponse, Skill } from '@openskillhub/shared';
+import { AGENT_LABELS, type AgentType } from '@openskillhub/shared';
 import type { CategoryWithCount } from '@/lib/types';
 import { CATEGORY_ICONS } from '@/lib/constants';
 import Link from 'next/link';
@@ -107,7 +108,9 @@ export default async function HomePage() {
           <p style={{ color: '#999' }}>暂无技能发布，启动后端并发布你的第一个技能！</p>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-            {skills.map((skill) => (
+            {(skills as (Skill & { versions?: { packages: { agentType: string }[] }[] })[]).map((skill) => {
+              const agents = [...new Set(skill.versions?.flatMap((v) => v.packages.map((p) => p.agentType)) ?? [])];
+              return (
               <Link
                 key={skill.id}
                 href={`/skills/${skill.name}`}
@@ -124,11 +127,17 @@ export default async function HomePage() {
                 <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '0.25rem' }}>
                   {skill.description?.slice(0, 120)}
                 </p>
-                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
-                  ↓ {skill.downloadCount}
+                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#999', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span>↓ {skill.downloadCount}</span>
+                  {agents.map((a) => (
+                    <span key={a} style={{ background: '#e6f4ea', color: '#137333', padding: '0.1rem 0.4rem', borderRadius: '3px', fontSize: '0.7rem' }}>
+                      {AGENT_LABELS[a as AgentType] || a}
+                    </span>
+                  ))}
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

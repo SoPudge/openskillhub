@@ -1,5 +1,6 @@
 import { apiFetch } from '@/lib/api';
 import type { PaginatedResponse, Skill, Tag } from '@openskillhub/shared';
+import { AGENT_LABELS, type AgentType } from '@openskillhub/shared';
 import type { CategoryWithCount } from '@/lib/types';
 import Link from 'next/link';
 import { Suspense } from 'react';
@@ -74,7 +75,9 @@ export default async function SkillsPage({
       ) : (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {result.data.map((skill: Skill & { category?: { name: string; slug: string }; tags?: { name: string; slug: string }[]; author?: { username: string } }) => (
+            {result.data.map((skill: Skill & { category?: { name: string; slug: string }; tags?: { name: string; slug: string }[]; author?: { username: string }; versions?: { packages: { agentType: string }[] }[] }) => {
+              const agents = [...new Set(skill.versions?.flatMap((v) => v.packages.map((p) => p.agentType)) ?? [])];
+              return (
               <Link
                 key={skill.id}
                 href={`/skills/${skill.name}`}
@@ -148,9 +151,28 @@ export default async function SkillsPage({
                         #{tag.name}
                       </span>
                     ))}
+                  {agents.length > 0 && (
+                    <span style={{ display: 'inline-flex', gap: '0.3rem' }}>
+                      {agents.map((a) => (
+                        <span
+                          key={a}
+                          style={{
+                            background: '#e6f4ea',
+                            color: '#137333',
+                            padding: '0.1rem 0.4rem',
+                            borderRadius: '3px',
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          {AGENT_LABELS[a as AgentType] || a}
+                        </span>
+                      ))}
+                    </span>
+                  )}
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
 
           {/* 分页 */}
