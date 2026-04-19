@@ -16,8 +16,9 @@ COPY tsconfig.base.json ./
 COPY packages/shared/ ./packages/shared/
 COPY frontend/ ./frontend/
 
-# Build shared (frontend imports from it)
-RUN pnpm --filter @openskillhub/shared build
+# Build shared + patch exports for compiled output
+RUN pnpm --filter @openskillhub/shared build \
+    && sed -i 's|./src/index.ts|./dist/index.js|g' packages/shared/package.json
 
 # Build Next.js (standalone output)
 ARG NEXT_PUBLIC_API_URL
