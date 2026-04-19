@@ -717,12 +717,12 @@ metadata:
 
 > **目标: 扩展到 OpenClaw、Claude Code、Cursor 等更多 Agent**
 
-- [ ] 适配 OpenClaw skill 安装路径 (`<workspace>/skills/`, `~/.openclaw/skills/`) & metadata.openclaw 扩展
-- [ ] 适配 Claude Code skill 安装路径 & frontmatter 差异
-- [ ] 适配 Cursor skill 安装
+- [x] 适配 OpenClaw skill 安装路径 (`<workspace>/skills/`, `~/.openclaw/skills/`) & metadata.openclaw 扩展
+- [x] 适配 Claude Code skill 安装路径 & frontmatter 差异
+- [x] 适配 Cursor skill 安装
 - [x] local-skill 的 `--agent` 参数 (osh.sh 已实现多 Agent 路径检测)
-- [ ] 按 Agent 类型的安装指引 (Web 详情页)
-- [ ] 技能跨 Agent 兼容性标记
+- [x] 按 Agent 类型的安装指引 (Web 详情页)
+- [x] 技能跨 Agent 兼容性标记
 - [ ] ClawHub 集成探索（OpenClaw 已有 clawhub.ai 技能市场，考虑如何互操作）
 
 ### Phase 7: 生产就绪 (Production)

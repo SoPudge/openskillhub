@@ -162,9 +162,15 @@ openskillhub/
   - `SkillListQuerySchema` 改为 `PaginationSchema.extend({...})`，消除重复字段定义
   - `getTeamOrThrow(slug)` 提取到 helpers.ts，teams.ts 5 处复用
   - 净减 88 行代码 (212 insertions, 300 deletions)
+- **多 Agent 适配 Phase 6 (2026-04-20)**:
+  - `AGENT_META` 常量: 每个 Agent 的安装路径、描述、官网 URL (shared/constants.ts)
+  - 技能详情页: 各 Agent 安装路径区块 (按已有包动态展示)、Agent 徽章链接到官网
+  - 技能列表页/首页: 每个技能卡片显示支持的 Agent 兼容性绿色徽章
+  - osh.sh 已有完整多 Agent 路径检测 (`agent_install_path`)
+  - 安装指引: 自然语言 / CLI (含 `--agent` 参数) / 直接下载
 
 ### 🔶 下一步待做
-- Phase 6: 多 Agent 适配完善 (OpenClaw/Claude Code/Cursor 安装路径)
+- Phase 6 剩余: ClawHub 集成探索（OpenClaw clawhub.ai 互操作）
 - Phase 7: S3 存储、Docker 镜像、CI/CD
 
 ### ⚠️ 已知问题
