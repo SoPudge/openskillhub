@@ -16,7 +16,7 @@ AI Agent 技能注册中心，基于 [Agent Skills](https://agentskills.io/) 开
 - **Monorepo**: pnpm workspace, TypeScript 5.9
 - **后端**: Node.js + Fastify 5 + Prisma 6 + PostgreSQL 17
 - **前端**: Next.js 15 (App Router) + React 19
-- **存储**: 本地文件系统 (→ S3/MinIO)
+- **存储**: 本地文件系统 / S3(MinIO) 可切换 (STORAGE_TYPE 环境变量)
 - **认证**: JWT + API Key 双模式
 - **安全**: @fastify/rate-limit (多级限速) + zod (请求校验)
 - **搜索**: PG tsvector + GIN 索引 + 自动更新触发器
@@ -55,6 +55,8 @@ openskillhub/
 - **后端**: http://192.168.20.199:3001
 - **前端**: http://192.168.20.199:3000
 - **数据库**: Docker 容器 `openskillhub-postgres` (port 5432)
+- **MinIO**: Docker 容器 `openskillhub-minio-1` (API: 9000, Console: 9001, creds: minioadmin/minioadmin)
+- **存储模式**: STORAGE_TYPE=s3 (MinIO)
 - **Node**: v22.22.0, pnpm: v10.30.3
 
 ## GitHub
@@ -168,10 +170,15 @@ openskillhub/
   - 技能列表页/首页: 每个技能卡片显示支持的 Agent 兼容性绿色徽章
   - osh.sh 已有完整多 Agent 路径检测 (`agent_install_path`)
   - 安装指引: 自然语言 / CLI (含 `--agent` 参数) / 直接下载
+- **S3/MinIO 存储 Phase 7 (2026-04-20)**:
+  - `S3StorageProvider`: 基于 @aws-sdk/client-s3，实现 save/get/delete/exists 四个方法
+  - `storage/index.ts`: 工厂函数支持 `STORAGE_TYPE=s3` 分支，读取 S3_ENDPOINT/REGION/BUCKET/ACCESS_KEY/SECRET_KEY 环境变量
+  - MinIO 容器已部署 (docker-compose.yml)，bucket `openskillhub-packages` 已创建
+  - 端到端验证通过: 上传→MinIO 存储→下载→MD5 一致
 
 ### 🔶 下一步待做
 - Phase 6 剩余: ClawHub 集成探索（OpenClaw clawhub.ai 互操作）
-- Phase 7: S3 存储、Docker 镜像、CI/CD
+- Phase 7 剩余: Docker 镜像 (Dockerfile.backend/frontend)、Docker Compose 完整编排、源码部署文档、CI/CD
 
 ### ⚠️ 已知问题
 - `packages/shared` 的 exports 指向 `./src/index.ts` 而非 `./dist/`（因为 tsx dev 模式不编译，生产构建时需改回）

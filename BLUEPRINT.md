@@ -729,7 +729,7 @@ metadata:
 
 > **目标: 可部署、可运维**
 
-- [ ] S3/MinIO 存储适配 (接口已定义，S3 实现待编写)
+- [x] S3/MinIO 存储适配 (S3StorageProvider + MinIO 容器 + 端到端验证通过)
 - [ ] Dockerfile.backend + Dockerfile.frontend 镜像构建
 - [ ] Docker Compose 完整编排 (backend + frontend + PG + MinIO)
 - [ ] 源码部署文档 (环境变量 + systemd/pm2 配置)
