@@ -1,0 +1,49 @@
+# ── Stage 1: Build ────────────────────────────────────────
+FROM node:22-alpine AS builder
+RUN corepack enable
+WORKDIR /app
+
+# Manifests for layer caching
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY backend/package.json ./backend/
+COPY packages/shared/package.json ./packages/shared/
+COPY frontend/package.json ./frontend/
+
+RUN pnpm install --frozen-lockfile
+
+# Source
+COPY tsconfig.base.json ./
+COPY packages/shared/ ./packages/shared/
+COPY backend/ ./backend/
+
+# Build shared + patch exports for Node.js runtime
+RUN pnpm --filter @openskillhub/shared build \
+    && sed -i 's|./src/index.ts|./dist/index.js|g' packages/shared/package.json
+
+# Generate Prisma client + compile backend
+RUN cd backend && npx prisma generate && npx tsc
+
+# Save generated Prisma client to a known location
+RUN find /app -path '*/.prisma/client/index.js' -exec dirname {} \; \
+    | head -1 | xargs -I{} cp -rL {} /tmp/prisma-client
+
+# Deploy backend with production deps (creates standalone flat node_modules)
+RUN pnpm --filter @openskillhub/backend deploy --prod /prod
+
+# ── Stage 2: Runtime ──────────────────────────────────────
+FROM node:22-alpine
+WORKDIR /app
+
+# Deployed output: package.json + prod node_modules (shared resolved)
+COPY --from=builder /prod ./
+
+# Built backend
+COPY --from=builder /app/backend/dist ./dist
+COPY --from=builder /app/backend/prisma ./prisma
+
+# Generated Prisma client
+COPY --from=builder /tmp/prisma-client ./node_modules/.prisma/client
+
+ENV NODE_ENV=production
+EXPOSE 3001
+CMD ["node", "dist/app.js"]

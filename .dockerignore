@@ -1,0 +1,13 @@
+node_modules
+.next
+dist
+logs
+*.log
+.env
+.env.*
+.git
+.gitignore
+.dockerignore
+README.md
+BLUEPRINT.md
+CONTEXT.md
