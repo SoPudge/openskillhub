@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: openskillhub
+          POSTGRES_PASSWORD: openskillhub
+          POSTGRES_DB: openskillhub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U openskillhub"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Generate Prisma client (needed for type checking)
+      - run: cd backend && npx prisma generate
+
+      # Type check shared package
+      - name: Typecheck shared
+        run: pnpm --filter @openskillhub/shared build
+
+      # Type check backend
+      - name: Typecheck backend
+        run: cd backend && npx tsc --noEmit
+
+      # Type check frontend
+      - name: Typecheck frontend
+        run: cd frontend && npx tsc --noEmit

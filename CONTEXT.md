@@ -185,7 +185,6 @@ openskillhub/
 
 ### 🔶 下一步待做
 - Phase 6 剩余: ClawHub 集成探索（OpenClaw clawhub.ai 互操作）
-- Phase 7 剩余: CI/CD 流水线
 
 ### ⚠️ 已知问题
 - `packages/shared` 的 exports 指向 `./src/index.ts` 而非 `./dist/`（因为 tsx dev 模式不编译，生产构建时需改回）
