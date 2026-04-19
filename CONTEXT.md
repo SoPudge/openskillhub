@@ -89,7 +89,7 @@ openskillhub/
 | POST | /teams/:slug/members | 添加成员 (owner/admin) |
 | DELETE | /teams/:slug/members/:username | 移除成员 (owner/admin/自己离开) |
 
-## 当前进度 (最后更新: 2026-04-17)
+## 当前进度 (最后更新: 2026-04-19)
 
 ### ✅ 已完成
 - **Phase 1 全部**: Monorepo 脚手架、shared 类型、后端 API、前端骨架、local-skill CLI、端到端链路验证
@@ -122,6 +122,12 @@ openskillhub/
   - teams.ts: 重复权限检查 → `assertTeamRole()`
   - stats.ts: 迁移到 AppError 统一错误处理
   - 净减 ~130 行重复代码
+- **前端代码审查与修复 (2026-04-19)**:
+  - 全量审查 18 个前端源文件 + 3 个 shared 包文件，排查语法错误、类型错误、JSX 闭合、导入缺失
+  - 修复: `packages/shared/src/index.ts` 和 `types.ts` 残留 `.js` 扩展名导致 `next build` 失败 (Module not found)
+  - 修复: `skills/[name]/page.tsx` 和 `DownloadChart.tsx` 中 `AGENT_LABELS[string]` 索引 `Record<AgentType, string>` 的 TypeScript 类型错误 (添加 `as AgentType` 断言)
+  - 修复: `skills/[name]/page.tsx` 中 `checksumSha256` 为 undefined 时显示 "SHA256: undefined" 的问题 (改为条件渲染)
+  - 验证: `next build` 编译通过，9 个路由全部成功生成，远程前端服务重启正常 (HTTP 200)
 
 ### 🔶 下一步待做
 - **Prisma 迁移**: `downloadCount`/`fileSize` BigInt 变更尚未生成 migration，需在远程服务器执行 `pnpm --filter backend prisma migrate dev`
