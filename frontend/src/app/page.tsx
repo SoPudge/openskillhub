@@ -18,10 +18,10 @@ export default async function HomePage() {
       {/* Hero */}
       <section style={{ textAlign: 'center', padding: '3rem 0' }}>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>OpenSkillHub</h1>
-        <p style={{ fontSize: '1.2rem', color: '#666' }}>
+        <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)' }}>
           AI Agent 技能注册中心 — 搜索、分享、管理 AI Agent 技能
         </p>
-        <p style={{ marginTop: '0.75rem', color: '#999' }}>
+        <p style={{ marginTop: '0.75rem', color: 'var(--text-muted)' }}>
           支持 OpenCode · OpenClaw · Claude Code · Cursor · Goose · Amp
         </p>
         <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
@@ -29,7 +29,7 @@ export default async function HomePage() {
             href="/skills"
             style={{
               padding: '0.6rem 1.5rem',
-              background: '#0070f3',
+              background: 'var(--accent)',
               color: 'white',
               borderRadius: '6px',
               textDecoration: 'none',
@@ -42,10 +42,10 @@ export default async function HomePage() {
             href="/categories"
             style={{
               padding: '0.6rem 1.5rem',
-              border: '1px solid #ddd',
+              border: '1px solid var(--border-strong)',
               borderRadius: '6px',
               textDecoration: 'none',
-              color: '#333',
+              color: 'var(--text)',
               fontSize: '0.95rem',
             }}
           >
@@ -75,7 +75,7 @@ export default async function HomePage() {
                 key={cat.slug}
                 href={`/skills?category=${cat.slug}`}
                 style={{
-                  border: '1px solid #eee',
+                  border: '1px solid var(--border)',
                   borderRadius: '8px',
                   padding: '0.75rem 1rem',
                   textDecoration: 'none',
@@ -88,7 +88,7 @@ export default async function HomePage() {
                 <span>{CATEGORY_ICONS[cat.slug] || '📦'}</span>
                 <div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{cat.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#999' }}>{cat._count.skills} 个技能</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{cat._count.skills} 个技能</div>
                 </div>
               </Link>
             ))}
@@ -105,7 +105,7 @@ export default async function HomePage() {
           </Link>
         </div>
         {skills.length === 0 ? (
-          <p style={{ color: '#999' }}>暂无技能发布，启动后端并发布你的第一个技能！</p>
+          <p style={{ color: 'var(--text-muted)' }}>暂无技能发布，启动后端并发布你的第一个技能！</p>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
             {(skills as (Skill & { versions?: { packages: { agentType: string }[] }[] })[]).map((skill) => {
@@ -115,7 +115,7 @@ export default async function HomePage() {
                 key={skill.id}
                 href={`/skills/${skill.name}`}
                 style={{
-                  border: '1px solid #eee',
+                  border: '1px solid var(--border)',
                   borderRadius: '8px',
                   padding: '1rem',
                   display: 'block',
@@ -124,13 +124,13 @@ export default async function HomePage() {
                 }}
               >
                 <h3>{skill.displayName}</h3>
-                <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
                   {skill.description?.slice(0, 120)}
                 </p>
-                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#999', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <span>↓ {skill.downloadCount}</span>
                   {agents.map((a) => (
-                    <span key={a} style={{ background: '#e6f4ea', color: '#137333', padding: '0.1rem 0.4rem', borderRadius: '3px', fontSize: '0.7rem' }}>
+                    <span key={a} style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: '0.1rem 0.4rem', borderRadius: '3px', fontSize: '0.7rem' }}>
                       {AGENT_LABELS[a as AgentType] || a}
                     </span>
                   ))}

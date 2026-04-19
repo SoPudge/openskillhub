@@ -82,21 +82,21 @@ export default function SettingsPage() {
   }, [api]);
 
   if (authLoading || loading) {
-    return <div style={{ textAlign: 'center', padding: '4rem', color: '#999' }}>加载中...</div>;
+    return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>加载中...</div>;
   }
   if (!user || !profile) return null;
 
-  const cardStyle: React.CSSProperties = { background: '#fff', border: '1px solid #eee', borderRadius: 8, padding: '1.5rem' };
-  const inputStyle: React.CSSProperties = { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.875rem', boxSizing: 'border-box' };
+  const cardStyle: React.CSSProperties = { background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '1.5rem' };
+  const inputStyle: React.CSSProperties = { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid var(--border-strong)', borderRadius: 6, fontSize: '0.875rem', boxSizing: 'border-box' };
   const labelStyle: React.CSSProperties = { display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' };
 
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
       <h1 style={{ marginBottom: '0.5rem' }}>个人设置</h1>
-      <p style={{ color: '#666', marginBottom: '2rem' }}>@{profile.username} · {profile.email}</p>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>@{profile.username} · {profile.email}</p>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid #eee', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border)', marginBottom: '1.5rem' }}>
         {([
           { key: 'profile' as const, label: '个人资料' },
           { key: 'apikeys' as const, label: 'API Keys' },
@@ -106,7 +106,7 @@ export default function SettingsPage() {
             onClick={() => setTab(t.key)}
             style={{
               padding: '0.5rem 1rem', background: 'none', border: 'none',
-              borderBottom: tab === t.key ? '2px solid #111' : '2px solid transparent',
+              borderBottom: tab === t.key ? '2px solid var(--text)' : '2px solid transparent',
               fontWeight: tab === t.key ? 600 : 400, cursor: 'pointer', fontSize: '1rem',
             }}
           >
@@ -120,13 +120,13 @@ export default function SettingsPage() {
         <div style={cardStyle}>
           <div style={{ marginBottom: '1rem' }}>
             <label style={labelStyle}>用户名</label>
-            <input value={profile.username} disabled style={{ ...inputStyle, background: '#f9f9f9', color: '#999' }} />
-            <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.25rem' }}>用户名不可修改</div>
+            <input value={profile.username} disabled style={{ ...inputStyle, background: 'var(--bg-secondary)', color: 'var(--text-muted)' }} />
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>用户名不可修改</div>
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
             <label style={labelStyle}>邮箱</label>
-            <input value={profile.email} disabled style={{ ...inputStyle, background: '#f9f9f9', color: '#999' }} />
+            <input value={profile.email} disabled style={{ ...inputStyle, background: 'var(--bg-secondary)', color: 'var(--text-muted)' }} />
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
@@ -140,7 +140,7 @@ export default function SettingsPage() {
             {avatarUrl && (
               <div style={{ marginTop: '0.5rem' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={avatarUrl} alt="Avatar preview" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee' }} />
+                <img src={avatarUrl} alt="Avatar preview" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)' }} />
               </div>
             )}
           </div>
@@ -149,30 +149,30 @@ export default function SettingsPage() {
             <button
               onClick={handleSaveProfile}
               disabled={saving}
-              style={{ padding: '0.5rem 1.5rem', background: '#111', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.9rem', opacity: saving ? 0.5 : 1 }}
+              style={{ padding: '0.5rem 1.5rem', background: 'var(--text)', color: 'var(--bg)', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.9rem', opacity: saving ? 0.5 : 1 }}
             >
               {saving ? '保存中...' : '保存'}
             </button>
-            {saveMsg && <span style={{ fontSize: '0.875rem', color: saveMsg === '已保存' ? '#059669' : '#dc2626' }}>{saveMsg}</span>}
+            {saveMsg && <span style={{ fontSize: '0.875rem', color: saveMsg === '已保存' ? 'var(--success)' : 'var(--danger)' }}>{saveMsg}</span>}
           </div>
 
-          <hr style={{ margin: '1.5rem 0', border: 'none', borderTop: '1px solid #eee' }} />
+          <hr style={{ margin: '1.5rem 0', border: 'none', borderTop: '1px solid var(--border)' }} />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontWeight: 500 }}>查看公开主页</div>
-              <div style={{ fontSize: '0.8rem', color: '#999' }}>其他人看到的你的资料</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>其他人看到的你的资料</div>
             </div>
-            <a href={`/authors/${profile.username}`} style={{ padding: '0.4rem 1rem', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.85rem', textDecoration: 'none', color: '#111' }}>
+            <a href={`/authors/${profile.username}`} style={{ padding: '0.4rem 1rem', border: '1px solid var(--border-strong)', borderRadius: 6, fontSize: '0.85rem', textDecoration: 'none', color: 'var(--text)' }}>
               查看
             </a>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
             <div>
-              <div style={{ fontWeight: 500, color: '#dc2626' }}>退出登录</div>
+              <div style={{ fontWeight: 500, color: 'var(--danger)' }}>退出登录</div>
             </div>
-            <button onClick={logout} style={{ padding: '0.4rem 1rem', border: '1px solid #fca5a5', borderRadius: 6, fontSize: '0.85rem', background: '#fff', color: '#dc2626', cursor: 'pointer' }}>
+            <button onClick={logout} style={{ padding: '0.4rem 1rem', border: '1px solid #fca5a5', borderRadius: 6, fontSize: '0.85rem', background: 'var(--bg)', color: 'var(--danger)', cursor: 'pointer' }}>
               退出
             </button>
           </div>
@@ -194,15 +194,15 @@ export default function SettingsPage() {
               />
               <button
                 onClick={createApiKey}
-                style={{ padding: '0.5rem 1rem', background: '#111', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.875rem', whiteSpace: 'nowrap' }}
+                style={{ padding: '0.5rem 1rem', background: 'var(--text)', color: 'var(--bg)', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.875rem', whiteSpace: 'nowrap' }}
               >
                 创建
               </button>
             </div>
             {newKeyResult && (
-              <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, fontSize: '0.875rem' }}>
+              <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'var(--success-bg)', border: '1px solid var(--success)', borderRadius: 6, fontSize: '0.875rem' }}>
                 <strong>请保存此 Key（仅显示一次）：</strong>
-                <code style={{ display: 'block', marginTop: '0.25rem', padding: '0.5rem', background: '#fff', borderRadius: 4, wordBreak: 'break-all' }}>
+                <code style={{ display: 'block', marginTop: '0.25rem', padding: '0.5rem', background: 'var(--bg)', borderRadius: 4, wordBreak: 'break-all' }}>
                   {newKeyResult}
                 </code>
               </div>
@@ -210,21 +210,21 @@ export default function SettingsPage() {
           </div>
 
           {apiKeys.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>暂无 API Key</div>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>暂无 API Key</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {apiKeys.map((key) => (
                 <div key={key.id} style={{ ...cardStyle, padding: '0.75rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontWeight: 500 }}>{key.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '0.125rem' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.125rem' }}>
                       <code>{key.keyPrefix}...</code> · 创建于 {new Date(key.createdAt).toLocaleDateString('zh-CN')}
                       {key.lastUsedAt && ` · 最近使用 ${new Date(key.lastUsedAt).toLocaleDateString('zh-CN')}`}
                     </div>
                   </div>
                   <button
                     onClick={() => deleteApiKey(key.id)}
-                    style={{ padding: '0.25rem 0.75rem', background: '#fff', border: '1px solid #fca5a5', color: '#dc2626', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem' }}
+                    style={{ padding: '0.25rem 0.75rem', background: 'var(--bg)', border: '1px solid #fca5a5', color: 'var(--danger)', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem' }}
                   >
                     删除
                   </button>

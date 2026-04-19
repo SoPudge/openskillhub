@@ -129,16 +129,16 @@ export default function PublishPage() {
   }, [api, token, file, agentType, createdSkillName, createdVersion]);
 
   if (authLoading) {
-    return <div style={{ textAlign: 'center', padding: '4rem', color: '#999' }}>加载中...</div>;
+    return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>加载中...</div>;
   }
   if (!user) return null;
 
-  const cardStyle: React.CSSProperties = { background: '#fff', border: '1px solid #eee', borderRadius: 8, padding: '1.5rem', maxWidth: 640, margin: '0 auto' };
-  const inputStyle: React.CSSProperties = { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.875rem', boxSizing: 'border-box' };
+  const cardStyle: React.CSSProperties = { background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '1.5rem', maxWidth: 640, margin: '0 auto' };
+  const inputStyle: React.CSSProperties = { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid var(--border-strong)', borderRadius: 6, fontSize: '0.875rem', boxSizing: 'border-box' };
   const labelStyle: React.CSSProperties = { display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' };
   const fieldStyle: React.CSSProperties = { marginBottom: '1rem' };
-  const primaryBtn: React.CSSProperties = { padding: '0.5rem 1.5rem', background: '#111', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.9rem' };
-  const secondaryBtn: React.CSSProperties = { padding: '0.5rem 1.5rem', background: '#fff', color: '#111', border: '1px solid #ddd', borderRadius: 6, cursor: 'pointer', fontSize: '0.9rem' };
+  const primaryBtn: React.CSSProperties = { padding: '0.5rem 1.5rem', background: 'var(--text)', color: 'var(--bg)', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.9rem' };
+  const secondaryBtn: React.CSSProperties = { padding: '0.5rem 1.5rem', background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border-strong)', borderRadius: 6, cursor: 'pointer', fontSize: '0.9rem' };
 
   // Step indicator
   const steps: { key: Step; label: string }[] = [
@@ -160,19 +160,19 @@ export default function PublishPage() {
             <div style={{
               width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '0.8rem', fontWeight: 600,
-              background: i <= stepIndex ? '#111' : '#eee',
-              color: i <= stepIndex ? '#fff' : '#999',
+              background: i <= stepIndex ? 'var(--text)' : 'var(--border)',
+              color: i <= stepIndex ? 'var(--bg)' : 'var(--text-muted)',
             }}>
               {i < stepIndex ? '✓' : i + 1}
             </div>
-            <span style={{ fontSize: '0.85rem', color: i <= stepIndex ? '#111' : '#999' }}>{s.label}</span>
-            {i < steps.length - 1 && <span style={{ color: '#ddd', margin: '0 0.25rem' }}>→</span>}
+            <span style={{ fontSize: '0.85rem', color: i <= stepIndex ? 'var(--text)' : 'var(--text-muted)' }}>{s.label}</span>
+            {i < steps.length - 1 && <span style={{ color: 'var(--border-strong)', margin: '0 0.25rem' }}>→</span>}
           </div>
         ))}
       </div>
 
       {error && (
-        <div style={{ maxWidth: 640, margin: '0 auto 1rem', padding: '0.75rem', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: '0.875rem' }}>
+        <div style={{ maxWidth: 640, margin: '0 auto 1rem', padding: '0.75rem', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: 'var(--danger)', fontSize: '0.875rem' }}>
           {error}
         </div>
       )}
@@ -190,7 +190,7 @@ export default function PublishPage() {
           <div style={fieldStyle}>
             <label style={labelStyle}>技能标识 *</label>
             <input value={name} onChange={e => setName(e.target.value)} placeholder="my-awesome-skill" style={inputStyle} />
-            <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.25rem' }}>小写字母、数字和连字符，以字母开头</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>小写字母、数字和连字符，以字母开头</div>
           </div>
 
           <div style={fieldStyle}>
@@ -248,14 +248,14 @@ export default function PublishPage() {
       {step === 'version' && (
         <div style={cardStyle}>
           <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem' }}>2. 创建版本</h2>
-          <p style={{ color: '#666', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
             技能 <strong>{createdSkillName}</strong> 已创建，现在添加第一个版本。
           </p>
 
           <div style={fieldStyle}>
             <label style={labelStyle}>版本号 *</label>
             <input value={version} onChange={e => setVersion(e.target.value)} placeholder="1.0.0" style={inputStyle} />
-            <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.25rem' }}>语义化版本格式 (如 1.0.0)</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>语义化版本格式 (如 1.0.0)</div>
           </div>
 
           <div style={fieldStyle}>
@@ -282,7 +282,7 @@ export default function PublishPage() {
       {step === 'package' && (
         <div style={cardStyle}>
           <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem' }}>3. 上传包</h2>
-          <p style={{ color: '#666', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
             版本 <strong>{createdVersion}</strong> 已创建，现在上传 Agent 包 (.zip)。
           </p>
 
@@ -302,11 +302,11 @@ export default function PublishPage() {
               style={{ fontSize: '0.875rem' }}
             />
             {file && (
-              <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                 {file.name} ({(file.size / 1024).toFixed(1)} KB)
               </div>
             )}
-            <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.25rem' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
               Zip 包应包含 SKILL.md 文件，最大 10 MB
             </div>
           </div>
@@ -331,7 +331,7 @@ export default function PublishPage() {
         <div style={{ ...cardStyle, textAlign: 'center' }}>
           <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎉</div>
           <h2 style={{ margin: '0 0 0.5rem' }}>发布成功！</h2>
-          <p style={{ color: '#666', marginBottom: '1.5rem' }}>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
             技能 <strong>{createdSkillName}</strong> v{createdVersion} 已发布
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>

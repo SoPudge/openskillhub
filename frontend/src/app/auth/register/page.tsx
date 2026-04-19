@@ -32,16 +32,16 @@ export default function RegisterPage() {
     }
   };
 
-  const inputStyle = { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #ddd', borderRadius: 6, fontSize: '1rem', boxSizing: 'border-box' as const };
+  const inputStyle = { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid var(--border-strong)', borderRadius: 6, fontSize: '1rem', boxSizing: 'border-box' as const };
   const labelStyle = { display: 'block', fontSize: '0.875rem', fontWeight: 500 as const, marginBottom: '0.25rem' };
 
   return (
     <div style={{ maxWidth: 400, margin: '4rem auto' }}>
       <h1 style={{ marginBottom: '0.5rem' }}>注册</h1>
-      <p style={{ color: '#666', marginBottom: '2rem' }}>创建 OpenSkillHub 账号</p>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>创建 OpenSkillHub 账号</p>
 
       {error && (
-        <div style={{ padding: '0.75rem', background: '#fef2f2', color: '#dc2626', borderRadius: 8, marginBottom: '1rem', fontSize: '0.875rem' }}>
+        <div style={{ padding: '0.75rem', background: '#fef2f2', color: 'var(--danger)', borderRadius: 8, marginBottom: '1rem', fontSize: '0.875rem' }}>
           {error}
         </div>
       )}
@@ -56,7 +56,7 @@ export default function RegisterPage() {
           <input value={form.username} onChange={update('username')} required minLength={2} maxLength={64} style={inputStyle} placeholder="小写字母、数字、下划线" />
         </div>
         <div style={{ marginBottom: '1rem' }}>
-          <label style={labelStyle}>显示名称 <span style={{ color: '#999', fontWeight: 400 }}>(可选)</span></label>
+          <label style={labelStyle}>显示名称 <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(可选)</span></label>
           <input value={form.displayName} onChange={update('displayName')} maxLength={128} style={inputStyle} />
         </div>
         <div style={{ marginBottom: '1rem' }}>
@@ -70,14 +70,14 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          style={{ width: '100%', padding: '0.625rem', background: '#111', color: '#fff', border: 'none', borderRadius: 6, fontSize: '1rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
+          style={{ width: '100%', padding: '0.625rem', background: 'var(--text)', color: 'var(--bg)', border: 'none', borderRadius: 6, fontSize: '1rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
         >
           {loading ? '注册中...' : '注册'}
         </button>
       </form>
 
-      <p style={{ textAlign: 'center', marginTop: '1.5rem', color: '#666', fontSize: '0.875rem' }}>
-        已有账号？ <a href="/auth/login" style={{ color: '#2563eb' }}>登录</a>
+      <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+        已有账号？ <a href="/auth/login" style={{ color: 'var(--link)' }}>登录</a>
       </p>
     </div>
   );

@@ -60,7 +60,7 @@ export default function TeamMembers({ slug, members: initialMembers, ownerId }: 
         {canManage && (
           <button
             onClick={() => setShowAdd(!showAdd)}
-            style={{ padding: '0.25rem 0.75rem', background: showAdd ? '#fff' : '#111', color: showAdd ? '#111' : '#fff', border: '1px solid #ddd', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem' }}
+            style={{ padding: '0.25rem 0.75rem', background: showAdd ? 'var(--bg)' : 'var(--text)', color: showAdd ? 'var(--text)' : 'var(--bg)', border: '1px solid var(--border-strong)', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem' }}
           >
             {showAdd ? '取消' : '添加成员'}
           </button>
@@ -68,23 +68,23 @@ export default function TeamMembers({ slug, members: initialMembers, ownerId }: 
       </div>
 
       {showAdd && (
-        <div style={{ padding: '0.75rem', border: '1px solid #eee', borderRadius: 6, marginBottom: '0.75rem' }}>
-          {error && <div style={{ color: '#dc2626', fontSize: '0.8rem', marginBottom: '0.5rem' }}>{error}</div>}
+        <div style={{ padding: '0.75rem', border: '1px solid var(--border)', borderRadius: 6, marginBottom: '0.75rem' }}>
+          {error && <div style={{ color: 'var(--danger)', fontSize: '0.8rem', marginBottom: '0.5rem' }}>{error}</div>}
           <input
             value={username}
             onChange={e => setUsername(e.target.value)}
             placeholder="用户名"
-            style={{ width: '100%', padding: '0.4rem 0.6rem', border: '1px solid #ddd', borderRadius: 4, fontSize: '0.85rem', marginBottom: '0.5rem', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '0.4rem 0.6rem', border: '1px solid var(--border-strong)', borderRadius: 4, fontSize: '0.85rem', marginBottom: '0.5rem', boxSizing: 'border-box' }}
           />
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <select value={role} onChange={e => setRole(e.target.value)} style={{ flex: 1, padding: '0.4rem', border: '1px solid #ddd', borderRadius: 4, fontSize: '0.85rem' }}>
+            <select value={role} onChange={e => setRole(e.target.value)} style={{ flex: 1, padding: '0.4rem', border: '1px solid var(--border-strong)', borderRadius: 4, fontSize: '0.85rem' }}>
               <option value="member">成员</option>
               <option value="admin">管理员</option>
             </select>
             <button
               onClick={handleAdd}
               disabled={adding || !username.trim()}
-              style={{ padding: '0.4rem 1rem', background: '#111', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.85rem', opacity: adding || !username.trim() ? 0.5 : 1 }}
+              style={{ padding: '0.4rem 1rem', background: 'var(--text)', color: 'var(--bg)', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.85rem', opacity: adding || !username.trim() ? 0.5 : 1 }}
             >
               {adding ? '...' : '添加'}
             </button>
@@ -94,10 +94,10 @@ export default function TeamMembers({ slug, members: initialMembers, ownerId }: 
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {members.map((m) => (
-          <div key={m.user.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', border: '1px solid #eee', borderRadius: 6 }}>
+          <div key={m.user.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', border: '1px solid var(--border)', borderRadius: 6 }}>
             <a href={`/authors/${m.user.username}`} style={{ textDecoration: 'none', color: 'inherit' }}>
               <span style={{ fontWeight: 500 }}>{m.user.displayName || m.user.username}</span>
-              <span style={{ color: '#999', fontSize: '0.8rem', marginLeft: '0.25rem' }}>@{m.user.username}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: '0.25rem' }}>@{m.user.username}</span>
             </a>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.75rem', padding: '0.125rem 0.5rem', background: roleBg[m.role] || '#f3f4f6', borderRadius: 4 }}>
@@ -106,7 +106,7 @@ export default function TeamMembers({ slug, members: initialMembers, ownerId }: 
               {canManage && m.role !== 'owner' && m.user.id !== user?.id && (
                 <button
                   onClick={() => handleRemove(m.user.username)}
-                  style={{ padding: '0.125rem 0.5rem', background: '#fff', border: '1px solid #fca5a5', color: '#dc2626', borderRadius: 4, cursor: 'pointer', fontSize: '0.7rem' }}
+                  style={{ padding: '0.125rem 0.5rem', background: 'var(--bg)', border: '1px solid #fca5a5', color: 'var(--danger)', borderRadius: 4, cursor: 'pointer', fontSize: '0.7rem' }}
                 >
                   移除
                 </button>

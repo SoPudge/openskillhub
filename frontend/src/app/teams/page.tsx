@@ -59,12 +59,12 @@ export default function TeamsPage() {
   }, [api, name, slug, router]);
 
   if (authLoading || loading) {
-    return <div style={{ textAlign: 'center', padding: '4rem', color: '#999' }}>加载中...</div>;
+    return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>加载中...</div>;
   }
   if (!user) return null;
 
-  const cardStyle: React.CSSProperties = { background: '#fff', border: '1px solid #eee', borderRadius: 8, padding: '1rem' };
-  const inputStyle: React.CSSProperties = { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.875rem', boxSizing: 'border-box' };
+  const cardStyle: React.CSSProperties = { background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '1rem' };
+  const inputStyle: React.CSSProperties = { width: '100%', padding: '0.5rem 0.75rem', border: '1px solid var(--border-strong)', borderRadius: 6, fontSize: '0.875rem', boxSizing: 'border-box' };
 
   return (
     <div>
@@ -72,7 +72,7 @@ export default function TeamsPage() {
         <h1 style={{ margin: 0 }}>我的团队</h1>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          style={{ padding: '0.5rem 1rem', background: '#111', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.875rem' }}
+          style={{ padding: '0.5rem 1rem', background: 'var(--text)', color: 'var(--bg)', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.875rem' }}
         >
           {showCreate ? '取消' : '创建团队'}
         </button>
@@ -81,7 +81,7 @@ export default function TeamsPage() {
       {showCreate && (
         <div style={{ ...cardStyle, marginBottom: '1.5rem', maxWidth: 480 }}>
           {error && (
-            <div style={{ padding: '0.5rem', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+            <div style={{ padding: '0.5rem', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: 'var(--danger)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
               {error}
             </div>
           )}
@@ -96,7 +96,7 @@ export default function TeamsPage() {
           <button
             onClick={handleCreate}
             disabled={creating || !name || !slug}
-            style={{ padding: '0.5rem 1.5rem', background: '#111', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.875rem', opacity: creating || !name || !slug ? 0.5 : 1 }}
+            style={{ padding: '0.5rem 1.5rem', background: 'var(--text)', color: 'var(--bg)', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.875rem', opacity: creating || !name || !slug ? 0.5 : 1 }}
           >
             {creating ? '创建中...' : '创建'}
           </button>
@@ -104,7 +104,7 @@ export default function TeamsPage() {
       )}
 
       {teams.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
           你还没有加入任何团队
         </div>
       ) : (
@@ -114,14 +114,14 @@ export default function TeamsPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>{team.name}</span>
-                  <span style={{ color: '#999', marginLeft: '0.5rem', fontSize: '0.875rem' }}>/{team.slug}</span>
+                  <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.875rem' }}>/{team.slug}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.875rem', color: '#666' }}>
+                <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                   <span>👥 {team._count.members} 成员</span>
                   <span>📦 {team._count.skills} 技能</span>
                 </div>
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '0.25rem' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                 创建者: @{team.owner.username} · {new Date(team.createdAt).toLocaleDateString('zh-CN')}
               </div>
             </a>

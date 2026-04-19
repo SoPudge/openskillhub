@@ -49,14 +49,14 @@ export default async function AuthorPage({
         style={{
           marginBottom: '2rem',
           paddingBottom: '1.5rem',
-          borderBottom: '1px solid #eee',
+          borderBottom: '1px solid var(--border)',
         }}
       >
         <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>
           @{username}
         </h1>
         {displayName !== username && (
-          <p style={{ color: '#666', fontSize: '1.05rem' }}>{displayName}</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem' }}>{displayName}</p>
         )}
 
         {/* 统计卡片 */}
@@ -72,41 +72,41 @@ export default async function AuthorPage({
           <div
             style={{
               padding: '0.75rem 1rem',
-              background: '#f8f9fa',
+              background: 'var(--bg-secondary)',
               borderRadius: '8px',
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0070f3' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent)' }}>
               {skills.length}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#999' }}>技能</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>技能</div>
           </div>
           <div
             style={{
               padding: '0.75rem 1rem',
-              background: '#f8f9fa',
+              background: 'var(--bg-secondary)',
               borderRadius: '8px',
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0070f3' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent)' }}>
               {totalDownloads.toLocaleString()}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#999' }}>总下载量</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>总下载量</div>
           </div>
           <div
             style={{
               padding: '0.75rem 1rem',
-              background: '#f8f9fa',
+              background: 'var(--bg-secondary)',
               borderRadius: '8px',
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0070f3' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent)' }}>
               {allAgents.length}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#999' }}>Agent</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Agent</div>
           </div>
         </div>
 
@@ -119,11 +119,11 @@ export default async function AuthorPage({
                 href={`/skills?category=${cat.slug}&author=${username}`}
                 style={{
                   padding: '0.2rem 0.6rem',
-                  background: '#f0f0f0',
+                  background: 'var(--bg-secondary)',
                   borderRadius: '12px',
                   fontSize: '0.8rem',
                   textDecoration: 'none',
-                  color: '#555',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 {cat.name}
@@ -139,7 +139,7 @@ export default async function AuthorPage({
       </h2>
 
       {skills.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
           <p>该用户尚未发布技能</p>
         </div>
       ) : (
@@ -149,7 +149,7 @@ export default async function AuthorPage({
               key={skill.id}
               href={`/skills/${skill.name}`}
               style={{
-                border: '1px solid #eee',
+                border: '1px solid var(--border)',
                 borderRadius: '8px',
                 padding: '1rem',
                 display: 'block',
@@ -166,14 +166,14 @@ export default async function AuthorPage({
               >
                 <h3 style={{ fontSize: '1.05rem' }}>{skill.displayName}</h3>
                 <span
-                  style={{ fontSize: '0.8rem', color: '#999', whiteSpace: 'nowrap' }}
+                  style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}
                 >
                   ↓ {skill.downloadCount}
                 </span>
               </div>
               <p
                 style={{
-                  color: '#666',
+                  color: 'var(--text-secondary)',
                   fontSize: '0.9rem',
                   marginTop: '0.25rem',
                   lineHeight: '1.5',
@@ -188,14 +188,14 @@ export default async function AuthorPage({
                   display: 'flex',
                   gap: '0.5rem',
                   fontSize: '0.8rem',
-                  color: '#999',
+                  color: 'var(--text-muted)',
                   flexWrap: 'wrap',
                 }}
               >
                 {skill.category && (
                   <span
                     style={{
-                      background: '#f0f0f0',
+                      background: 'var(--bg-secondary)',
                       padding: '0.1rem 0.4rem',
                       borderRadius: '3px',
                     }}
@@ -207,7 +207,7 @@ export default async function AuthorPage({
                   <span
                     key={tag.slug}
                     style={{
-                      background: '#f8f8f8',
+                      background: 'var(--bg-secondary)',
                       padding: '0.1rem 0.4rem',
                       borderRadius: '3px',
                     }}

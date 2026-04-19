@@ -39,13 +39,13 @@ export default function DownloadChart({ skillName }: { skillName: string }) {
 
   if (loading) {
     return (
-      <div style={{ padding: '1rem', color: '#999', textAlign: 'center' }}>加载统计...</div>
+      <div style={{ padding: '1rem', color: 'var(--text-muted)', textAlign: 'center' }}>加载统计...</div>
     );
   }
 
   if (!stats || stats.totalDownloads === 0) {
     return (
-      <div style={{ padding: '1rem', color: '#999', fontSize: '0.9rem' }}>
+      <div style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
         暂无下载数据
       </div>
     );
@@ -71,7 +71,7 @@ export default function DownloadChart({ skillName }: { skillName: string }) {
           flexWrap: 'wrap',
         }}
       >
-        <span style={{ fontSize: '0.85rem', color: '#666' }}>统计周期:</span>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>统计周期:</span>
         {(
           [
             { p: 'day' as const, d: 30, label: '30 天' },
@@ -92,12 +92,12 @@ export default function DownloadChart({ skillName }: { skillName: string }) {
               fontSize: '0.8rem',
               border:
                 period === opt.p && days === opt.d
-                  ? '1px solid #0070f3'
-                  : '1px solid #ddd',
+                  ? '1px solid var(--accent)'
+                  : '1px solid var(--border-strong)',
               background:
-                period === opt.p && days === opt.d ? '#e8f4fd' : 'white',
+                period === opt.p && days === opt.d ? 'var(--accent-bg)' : 'var(--bg)',
               color:
-                period === opt.p && days === opt.d ? '#0070f3' : '#666',
+                period === opt.p && days === opt.d ? 'var(--accent)' : 'var(--text-secondary)',
               cursor: 'pointer',
             }}
           >
@@ -186,7 +186,7 @@ export default function DownloadChart({ skillName }: { skillName: string }) {
           <div
             style={{
               fontSize: '0.85rem',
-              color: '#666',
+              color: 'var(--text-secondary)',
               marginBottom: '0.5rem',
             }}
           >
@@ -214,7 +214,7 @@ export default function DownloadChart({ skillName }: { skillName: string }) {
                   }}
                 />
                 <span>{AGENT_LABELS[a.agentType as AgentType] || a.agentType}</span>
-                <span style={{ color: '#999' }}>({a.count})</span>
+                <span style={{ color: 'var(--text-muted)' }}>({a.count})</span>
               </div>
             ))}
           </div>

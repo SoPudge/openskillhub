@@ -17,13 +17,13 @@ export default async function CategoriesPage() {
     <div>
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>技能分类</h1>
-        <p style={{ color: '#666' }}>
+        <p style={{ color: 'var(--text-secondary)' }}>
           按分类浏览 {totalSkills} 个技能，找到适合你工作流的 AI Agent 技能
         </p>
       </div>
 
       {categories.length === 0 ? (
-        <p style={{ color: '#999', textAlign: 'center', padding: '3rem' }}>
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '3rem' }}>
           暂无分类数据
         </p>
       ) : (
@@ -39,7 +39,7 @@ export default async function CategoriesPage() {
               key={cat.slug}
               href={`/skills?category=${cat.slug}`}
               style={{
-                border: '1px solid #eee',
+                border: '1px solid var(--border)',
                 borderRadius: '10px',
                 padding: '1.25rem',
                 display: 'block',
@@ -55,7 +55,7 @@ export default async function CategoriesPage() {
                 <h2 style={{ fontSize: '1.1rem', margin: 0 }}>{cat.name}</h2>
               </div>
               {cat.description && (
-                <p style={{ color: '#666', fontSize: '0.85rem', marginBottom: '0.75rem', lineHeight: '1.5' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.75rem', lineHeight: '1.5' }}>
                   {cat.description}
                 </p>
               )}
@@ -65,11 +65,11 @@ export default async function CategoriesPage() {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   fontSize: '0.8rem',
-                  color: '#999',
+                  color: 'var(--text-muted)',
                 }}
               >
                 <span>{cat._count.skills} 个技能</span>
-                <span style={{ color: '#0070f3' }}>浏览 →</span>
+                <span style={{ color: 'var(--accent)' }}>浏览 →</span>
               </div>
             </Link>
           ))}
@@ -81,12 +81,12 @@ export default async function CategoriesPage() {
         style={{
           marginTop: '2.5rem',
           padding: '1.25rem',
-          background: '#f8f9fa',
+          background: 'var(--bg-secondary)',
           borderRadius: '10px',
           textAlign: 'center',
         }}
       >
-        <p style={{ color: '#666', marginBottom: '0.75rem' }}>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
           没有找到合适的分类？
         </p>
         <Link
@@ -94,7 +94,7 @@ export default async function CategoriesPage() {
           style={{
             display: 'inline-block',
             padding: '0.5rem 1.5rem',
-            background: '#0070f3',
+            background: 'var(--accent)',
             color: 'white',
             borderRadius: '6px',
             textDecoration: 'none',

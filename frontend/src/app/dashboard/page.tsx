@@ -77,7 +77,7 @@ export default function DashboardPage() {
   }, [api]);
 
   if (authLoading || loading) {
-    return <div style={{ textAlign: 'center', padding: '4rem', color: '#999' }}>加载中...</div>;
+    return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>加载中...</div>;
   }
 
   if (!user) return null;
@@ -97,8 +97,8 @@ export default function DashboardPage() {
     .map(([date, count]) => ({ date, count }));
   const recent30Downloads = timelineDays.reduce((s, t) => s + t.count, 0);
 
-  const cardStyle: React.CSSProperties = { background: '#fff', border: '1px solid #eee', borderRadius: 8, padding: '1rem' };
-  const btnStyle: React.CSSProperties = { padding: '0.5rem 1rem', border: '1px solid #ddd', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: '0.875rem' };
+  const cardStyle: React.CSSProperties = { background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '1rem' };
+  const btnStyle: React.CSSProperties = { padding: '0.5rem 1rem', border: '1px solid var(--border-strong)', borderRadius: 6, background: 'var(--bg)', cursor: 'pointer', fontSize: '0.875rem', color: 'var(--text)' };
 
   return (
     <div>
@@ -106,10 +106,10 @@ export default function DashboardPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
           <h1 style={{ margin: 0 }}>控制面板</h1>
-          <p style={{ color: '#666', marginTop: '0.25rem' }}>欢迎, {user.displayName || user.username}</p>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>欢迎, {user.displayName || user.username}</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={() => router.push('/publish')} style={{ ...btnStyle, background: '#111', color: '#fff', border: 'none' }}>
+          <button onClick={() => router.push('/publish')} style={{ ...btnStyle, background: 'var(--text)', color: 'var(--bg)', border: 'none' }}>
             发布新技能
           </button>
           <button onClick={logout} style={btnStyle}>退出登录</button>
@@ -120,19 +120,19 @@ export default function DashboardPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
         <div style={cardStyle}>
           <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{skills.length}</div>
-          <div style={{ color: '#666', fontSize: '0.875rem' }}>我的技能</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>我的技能</div>
         </div>
         <div style={cardStyle}>
           <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{totalDownloads}</div>
-          <div style={{ color: '#666', fontSize: '0.875rem' }}>总下载量</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>总下载量</div>
         </div>
         <div style={cardStyle}>
           <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{totalVersions}</div>
-          <div style={{ color: '#666', fontSize: '0.875rem' }}>总版本数</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>总版本数</div>
         </div>
         <div style={cardStyle}>
           <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{apiKeys.length}</div>
-          <div style={{ color: '#666', fontSize: '0.875rem' }}>API Keys</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>API Keys</div>
         </div>
       </div>
 
@@ -141,7 +141,7 @@ export default function DashboardPage() {
         <div style={{ ...cardStyle, marginBottom: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
             <h3 style={{ margin: 0 }}>30 天下载趋势</h3>
-            <span style={{ fontSize: '0.875rem', color: '#666' }}>
+            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
               近 30 天共 <strong>{recent30Downloads}</strong> 次下载
             </span>
           </div>
@@ -150,7 +150,7 @@ export default function DashboardPage() {
       )}
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid #eee', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border)', marginBottom: '1.5rem' }}>
         {([
           { key: 'skills' as const, label: '我的技能' },
           { key: 'stats' as const, label: '技能统计' },
@@ -161,8 +161,8 @@ export default function DashboardPage() {
             onClick={() => setTab(t.key)}
             style={{
               padding: '0.5rem 1rem', background: 'none', border: 'none',
-              borderBottom: tab === t.key ? '2px solid #111' : '2px solid transparent',
-              fontWeight: tab === t.key ? 600 : 400, cursor: 'pointer', fontSize: '1rem',
+              borderBottom: tab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
+              fontWeight: tab === t.key ? 600 : 400, cursor: 'pointer', fontSize: '1rem', color: 'var(--text)',
             }}
           >
             {t.label}
@@ -187,14 +187,14 @@ export default function DashboardPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ flex: 1 }}>
                         <span style={{ fontWeight: 600 }}>{skill.displayName}</span>
-                        <span style={{ color: '#999', marginLeft: '0.5rem', fontSize: '0.875rem' }}>{skill.name}</span>
+                        <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.875rem' }}>{skill.name}</span>
                         {skill.visibility !== 'public' && (
                           <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', padding: '0.125rem 0.375rem', background: skill.visibility === 'private' ? '#fee2e2' : '#e0e7ff', borderRadius: 4 }}>
                             {skill.visibility === 'private' ? '私有' : '团队'}
                           </span>
                         )}
                       </div>
-                      <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem', color: '#666', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem', color: 'var(--text-secondary)', alignItems: 'center' }}>
                         {stats && stats.timeline.length > 0 && (
                           <div style={{ width: 80, height: 24 }}>
                             <MiniSparkline data={stats.timeline} />
@@ -204,7 +204,7 @@ export default function DashboardPage() {
                         <span>⬇ {skill.downloadCount}</span>
                       </div>
                     </div>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: '#666' }}>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                       {skill.description.slice(0, 100)}{skill.description.length > 100 ? '...' : ''}
                     </p>
                   </a>
@@ -228,15 +228,15 @@ export default function DashboardPage() {
                   <div key={skill.id} style={cardStyle}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                       <div>
-                        <a href={`/skills/${skill.name}`} style={{ fontWeight: 600, color: '#111', textDecoration: 'none' }}>
+                        <a href={`/skills/${skill.name}`} style={{ fontWeight: 600, color: 'var(--text)', textDecoration: 'none' }}>
                           {skill.displayName}
                         </a>
-                        <span style={{ marginLeft: '0.5rem', fontSize: '0.875rem', color: '#999' }}>
+                        <span style={{ marginLeft: '0.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                           总下载 {skill.downloadCount}
                         </span>
                       </div>
                       {stats && stats.byAgent.length > 0 && (
-                        <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#666' }}>
+                        <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                           {stats.byAgent.map((a) => (
                             <span key={a.agentType}>
                               {a.agentType}: {a.count}
@@ -269,19 +269,19 @@ export default function DashboardPage() {
                 onChange={(e) => setNewKeyName(e.target.value)}
                 placeholder="Key 名称 (如 MacBook Pro)"
                 onKeyDown={(e) => e.key === 'Enter' && createApiKey()}
-                style={{ flex: 1, padding: '0.5rem 0.75rem', border: '1px solid #ddd', borderRadius: 6, fontSize: '0.875rem' }}
+                style={{ flex: 1, padding: '0.5rem 0.75rem', border: '1px solid var(--border-strong)', borderRadius: 6, fontSize: '0.875rem' }}
               />
               <button
                 onClick={createApiKey}
-                style={{ padding: '0.5rem 1rem', background: '#111', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.875rem', whiteSpace: 'nowrap' }}
+                style={{ padding: '0.5rem 1rem', background: 'var(--text)', color: 'var(--bg)', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.875rem', whiteSpace: 'nowrap' }}
               >
                 创建
               </button>
             </div>
             {newKeyResult && (
-              <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, fontSize: '0.875rem' }}>
+              <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'var(--success-bg)', border: '1px solid var(--success)', borderRadius: 6, fontSize: '0.875rem' }}>
                 <strong>请保存此 Key（仅显示一次）：</strong>
-                <code style={{ display: 'block', marginTop: '0.25rem', padding: '0.5rem', background: '#fff', borderRadius: 4, wordBreak: 'break-all' }}>
+                <code style={{ display: 'block', marginTop: '0.25rem', padding: '0.5rem', background: 'var(--bg)', borderRadius: 4, wordBreak: 'break-all' }}>
                   {newKeyResult}
                 </code>
               </div>
@@ -303,7 +303,7 @@ export default function DashboardPage() {
                   </div>
                   <button
                     onClick={() => deleteApiKey(key.id)}
-                    style={{ padding: '0.25rem 0.75rem', background: '#fff', border: '1px solid #fca5a5', color: '#dc2626', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem' }}
+                    style={{ padding: '0.25rem 0.75rem', background: 'var(--bg)', border: '1px solid #fca5a5', color: 'var(--danger)', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem' }}
                   >
                     删除
                   </button>
@@ -337,7 +337,7 @@ function MiniChart({ data, height = 80 }: { data: { date: string; count: number 
               width={barW}
               height={Math.max(h, 1)}
               rx={2}
-              fill="#2563eb"
+              fill="var(--accent)"
               opacity={0.7}
             />
             <title>{d.date.slice(0, 10)}: {d.count} 下载</title>
