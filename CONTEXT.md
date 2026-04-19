@@ -109,7 +109,7 @@ openskillhub/
 | GET | /clawhub/skills | ClawHub 技能列表代理 |
 | GET | /clawhub/skills/:slug | ClawHub 技能详情代理 |
 
-## 当前进度 (最后更新: 2026-04-20)
+## 当前进度 (最后更新: 2026-04-21)
 
 ### ✅ 已完成
 - **Phase 1 全部**: Monorepo 脚手架、shared 类型、后端 API、前端骨架、local-skill CLI、端到端链路验证
@@ -190,6 +190,19 @@ openskillhub/
   - 前端: `/clawhub` 客户端搜索浏览页面 (向量搜索 + 结果列表 + 详情面板 + ClawHub 链接)
   - 导航栏: 新增 ClawHub 链接 (紫色标识区分)
   - 验证通过: 远程 search API 返回 20 结果, skill detail 含下载数/星标/版本/changelog
+
+- **前端 UI 统一美化 (2026-04-21)**:
+  - **设计系统**: 渐变主题色 (#667eea → #764ba2 → #f093fb)、12px/16px 圆角、CSS 变量驱动、所有硬编码颜色已替换
+  - **HeaderNav**: 置顶毛玻璃导航栏 (sticky + backdrop-filter)、渐变 Logo、活跃路由高亮、渐变发布按钮、用户头像胶囊
+  - **首页**: 渐变 Hero 区域 + 动画光圈、技能卡片 (accent strip + download badge)、分类卡片 (渐变图标 + category-card class)
+  - **技能详情**: 渐变头部、标签/Agent 徽章、安装指南卡片组、渐变下载按钮、LATEST 渐变徽章
+  - **分类页**: 渐变头部、分类卡片统一样式、底部 CTA
+  - **技能列表**: 渐变头部、统一卡片样式、渐变分页
+  - **作者页/团队页**: 渐变头部+头像、统计卡片、技能卡片统一
+  - **Dashboard**: 渐变头部+发布按钮、图标统计卡片、渐变标签栏 (pill style)、技能卡片 (accent strip + download badge + visibility badge)、MiniSparkline 主题色、API Keys 渐变按钮
+  - **登录/注册**: 居中卡片布局、装饰渐变光圈、渐变提交按钮、输入框焦点动效 (紫色边框+光晕)、错误提示带图标
+  - **发布向导**: 渐变头部、渐变步骤指示器 (图标+连接线)、卡片统一 16px 圆角、虚线文件上传区、完成页渐变图标
+  - **SkillFilters**: 渐变搜索按钮、焦点动效、激活筛选 accent 高亮、清除按钮 hover danger 色
 
 ### 🔶 下一步待做
 - Phase 6 全部完成，Phase 7 全部完成

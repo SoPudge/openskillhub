@@ -743,6 +743,22 @@ metadata:
 - [x] 错误处理体系 (AppError 类 + ErrorCode 枚举 27 错误码 + Prisma 错误自动映射 + 统一 `{error, code}` 响应)
 - [x] 代码 DRY 重构 (lib/helpers.ts 共用查找/权限/格式化, 下载 handler 合并, 净减 ~130 行)
 
+### Phase 8: 前端 UI 统一美化 (UI Polish) ✅ 完成
+
+> **目标: 建立统一设计系统，全站视觉一致性**
+
+- [x] 设计系统: 渐变主题色 (#667eea → #764ba2 → #f093fb)、12px/16px 圆角、CSS 变量驱动
+- [x] HeaderNav: 置顶毛玻璃导航 (sticky + backdrop-filter)、渐变 Logo、路由高亮、用户头像胶囊
+- [x] 首页: Hero 渐变光圈动画、技能卡片 (accent strip + download badge)、分类卡片渐变图标
+- [x] 技能详情: 渐变头部、标签/Agent 徽章、安装指南卡片组、渐变下载按钮、LATEST 徽章
+- [x] 分类页: 渐变头部、统一分类卡片、底部 CTA
+- [x] 技能列表: 渐变头部、统一卡片、渐变分页
+- [x] 作者页/团队列表/团队详情: 渐变头部、统计卡片、技能卡片统一
+- [x] Dashboard: 渐变标签栏 (pill style)、图标统计卡片、技能卡片统一、MiniSparkline 主题色、API Keys 渐变按钮
+- [x] 登录/注册: 居中卡片布局、装饰光圈、渐变按钮、输入框焦点动效
+- [x] 发布向导: 渐变步骤指示器 (图标+连接线)、虚线上传区、卡片 16px 圆角
+- [x] SkillFilters: 渐变搜索按钮、焦点动效、激活筛选 accent 高亮、清除按钮 hover danger
+
 ---
 
 ## 10. 关键设计决策
