@@ -75,7 +75,7 @@ export default function AdminCategoriesPage() {
     setActionLoading(false);
   };
 
-  const inputStyle = { padding: '0.4rem 0.6rem', border: '1px solid #ddd', borderRadius: '4px', fontSize: '0.85rem' };
+  const inputStyle = { padding: '0.4rem 0.6rem', border: '1px solid var(--border-strong)', borderRadius: '4px', fontSize: '0.85rem' };
 
   return (
     <div>
@@ -83,7 +83,7 @@ export default function AdminCategoriesPage() {
         <h1>分类管理</h1>
         <button
           onClick={() => setShowNew(!showNew)}
-          style={{ padding: '0.5rem 1rem', background: '#111', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}
+          style={{ padding: '0.5rem 1rem', background: 'var(--text)', color: 'var(--bg)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}
         >
           + 新建分类
         </button>
@@ -91,23 +91,23 @@ export default function AdminCategoriesPage() {
 
       {/* New category form */}
       {showNew && (
-        <div style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem', background: '#fafafa' }}>
+        <div style={{ border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem', background: 'var(--bg-secondary)' }}>
           <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>新建分类</h3>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'end' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>名称</label>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>名称</label>
               <input value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} style={inputStyle} placeholder="Development Workflow" />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>Slug</label>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Slug</label>
               <input value={newForm.slug} onChange={(e) => setNewForm({ ...newForm, slug: e.target.value })} style={inputStyle} placeholder="dev-workflow" />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>描述</label>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>描述</label>
               <input value={newForm.description} onChange={(e) => setNewForm({ ...newForm, description: e.target.value })} style={{ ...inputStyle, width: '100%' }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: '#666', marginBottom: '0.25rem' }}>排序</label>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>排序</label>
               <input type="number" value={newForm.sortOrder} onChange={(e) => setNewForm({ ...newForm, sortOrder: Number(e.target.value) })} style={{ ...inputStyle, width: '60px' }} />
             </div>
             <button onClick={createCategory} disabled={actionLoading} style={{ padding: '0.4rem 1rem', background: '#22c55e', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>
@@ -118,13 +118,13 @@ export default function AdminCategoriesPage() {
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>加载中...</div>
+        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>加载中...</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {categories.map((cat) => (
             <div
               key={cat.id}
-              style={{ border: '1px solid #eee', borderRadius: '8px', padding: '0.75rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}
+              style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '0.75rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}
             >
               {editId === cat.id ? (
                 /* Edit mode */
@@ -133,7 +133,7 @@ export default function AdminCategoriesPage() {
                   <input value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} style={{ ...inputStyle, flex: 1 }} placeholder="描述" />
                   <input type="number" value={editForm.sortOrder} onChange={(e) => setEditForm({ ...editForm, sortOrder: Number(e.target.value) })} style={{ ...inputStyle, width: '60px' }} />
                   <button onClick={() => saveEdit(cat.slug)} disabled={actionLoading} style={{ padding: '0.3rem 0.75rem', background: '#22c55e', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>保存</button>
-                  <button onClick={() => setEditId(null)} style={{ padding: '0.3rem 0.75rem', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', background: '#fff' }}>取消</button>
+                  <button onClick={() => setEditId(null)} style={{ padding: '0.3rem 0.75rem', border: '1px solid var(--border-strong)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', background: 'var(--bg)' }}>取消</button>
                 </div>
               ) : (
                 /* View mode */
@@ -141,15 +141,15 @@ export default function AdminCategoriesPage() {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontWeight: 600 }}>{cat.name}</span>
-                      <span style={{ fontSize: '0.8rem', color: '#999' }}>{cat.slug}</span>
-                      <span style={{ fontSize: '0.75rem', color: '#999' }}>#{cat.sortOrder}</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{cat.slug}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>#{cat.sortOrder}</span>
                     </div>
-                    {cat.description && <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.15rem' }}>{cat.description}</div>}
+                    {cat.description && <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>{cat.description}</div>}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#999' }}>{cat._count?.skills || 0} 技能</span>
-                    <button onClick={() => startEdit(cat)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer', background: '#fff' }}>编辑</button>
-                    <button onClick={() => deleteCategory(cat.slug, cat.name)} disabled={actionLoading} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #fca5a5', borderRadius: '4px', cursor: 'pointer', background: '#fff', color: '#dc2626' }}>删除</button>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{cat._count?.skills || 0} 技能</span>
+                    <button onClick={() => startEdit(cat)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid var(--border-strong)', borderRadius: '4px', cursor: 'pointer', background: 'var(--bg)' }}>编辑</button>
+                    <button onClick={() => deleteCategory(cat.slug, cat.name)} disabled={actionLoading} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #fca5a5', borderRadius: '4px', cursor: 'pointer', background: 'var(--bg)', color: 'var(--danger)' }}>删除</button>
                   </div>
                 </>
               )}

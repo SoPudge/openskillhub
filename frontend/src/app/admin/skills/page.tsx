@@ -98,17 +98,17 @@ export default function AdminSkillsPage() {
           placeholder="搜索技能名称..."
           value={query}
           onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-          style={{ width: '100%', maxWidth: '400px', padding: '0.5rem 0.75rem', border: '1px solid #ddd', borderRadius: '6px', fontSize: '0.9rem' }}
+          style={{ width: '100%', maxWidth: '400px', padding: '0.5rem 0.75rem', border: '1px solid var(--border-strong)', borderRadius: '6px', fontSize: '0.9rem' }}
         />
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>加载中...</div>
+        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>加载中...</div>
       ) : !result ? (
-        <div style={{ color: '#dc2626' }}>加载失败</div>
+        <div style={{ color: 'var(--danger)' }}>加载失败</div>
       ) : (
         <>
-          <div style={{ fontSize: '0.85rem', color: '#999', marginBottom: '0.75rem' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
             共 {result.total} 个技能
           </div>
 
@@ -117,28 +117,28 @@ export default function AdminSkillsPage() {
               <div
                 key={skill.id}
                 style={{
-                  border: skill.featured ? '2px solid #f59e0b' : '1px solid #eee',
+                  border: skill.featured ? '2px solid #f59e0b' : '1px solid var(--border)',
                   borderRadius: '8px',
                   padding: '0.75rem 1rem',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   gap: '1rem',
-                  background: skill.featured ? '#fffbeb' : '#fff',
+                  background: skill.featured ? '#fffbeb' : 'var(--bg)',
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <Link href={`/skills/${skill.name}`} style={{ fontWeight: 600, textDecoration: 'none', color: '#111' }}>
+                    <Link href={`/skills/${skill.name}`} style={{ fontWeight: 600, textDecoration: 'none', color: 'var(--text)' }}>
                       {skill.displayName}
                     </Link>
-                    <span style={{ fontSize: '0.8rem', color: '#999' }}>{skill.name}</span>
-                    <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '3px', background: '#f0f0f0', color: visibilityColor[skill.visibility] }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{skill.name}</span>
+                    <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '3px', background: 'var(--bg-secondary)', color: visibilityColor[skill.visibility] }}>
                       {visibilityLabel[skill.visibility] || skill.visibility}
                     </span>
                     {skill.featured && <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '3px', background: '#fef3c7', color: '#92400e' }}>⭐ 推荐</span>}
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '0.25rem' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                     {skill.author && <span>@{skill.author.username}</span>}
                     {skill.category && <span> · {skill.category.name}</span>}
                     <span> · ⬇ {skill.downloadCount}</span>
@@ -151,9 +151,9 @@ export default function AdminSkillsPage() {
                     onClick={() => toggleFeatured(skill.name, !skill.featured)}
                     disabled={actionLoading === skill.name}
                     style={{
-                      padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #ddd',
-                      borderRadius: '4px', background: '#fff', cursor: 'pointer',
-                      color: skill.featured ? '#92400e' : '#666',
+                      padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid var(--border-strong)',
+                      borderRadius: '4px', background: 'var(--bg)', cursor: 'pointer',
+                      color: skill.featured ? '#92400e' : 'var(--text-secondary)',
                     }}
                   >
                     {skill.featured ? '取消推荐' : '⭐ 推荐'}
@@ -162,7 +162,7 @@ export default function AdminSkillsPage() {
                     value={skill.visibility}
                     onChange={(e) => changeVisibility(skill.name, e.target.value)}
                     disabled={actionLoading === skill.name}
-                    style={{ padding: '0.25rem 0.4rem', fontSize: '0.75rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                    style={{ padding: '0.25rem 0.4rem', fontSize: '0.75rem', border: '1px solid var(--border-strong)', borderRadius: '4px' }}
                   >
                     <option value="public">公开</option>
                     <option value="team">团队</option>
@@ -173,7 +173,7 @@ export default function AdminSkillsPage() {
                     disabled={actionLoading === skill.name}
                     style={{
                       padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #fca5a5',
-                      borderRadius: '4px', background: '#fff', cursor: 'pointer', color: '#dc2626',
+                      borderRadius: '4px', background: 'var(--bg)', cursor: 'pointer', color: 'var(--danger)',
                     }}
                   >
                     删除
@@ -187,13 +187,13 @@ export default function AdminSkillsPage() {
           {result.totalPages > 1 && (
             <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
               {page > 1 && (
-                <button onClick={() => setPage(page - 1)} style={{ padding: '0.4rem 0.75rem', border: '1px solid #ddd', borderRadius: '4px', fontSize: '0.85rem', cursor: 'pointer' }}>
+                <button onClick={() => setPage(page - 1)} style={{ padding: '0.4rem 0.75rem', border: '1px solid var(--border-strong)', borderRadius: '4px', fontSize: '0.85rem', cursor: 'pointer' }}>
                   ← 上一页
                 </button>
               )}
-              <span style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', color: '#666' }}>{page} / {result.totalPages}</span>
+              <span style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{page} / {result.totalPages}</span>
               {page < result.totalPages && (
-                <button onClick={() => setPage(page + 1)} style={{ padding: '0.4rem 0.75rem', border: '1px solid #ddd', borderRadius: '4px', fontSize: '0.85rem', cursor: 'pointer' }}>
+                <button onClick={() => setPage(page + 1)} style={{ padding: '0.4rem 0.75rem', border: '1px solid var(--border-strong)', borderRadius: '4px', fontSize: '0.85rem', cursor: 'pointer' }}>
                   下一页 →
                 </button>
               )}

@@ -78,7 +78,7 @@ export default function ClawHubPage() {
         <h1 style={{ marginBottom: '0.5rem' }}>
           <span style={{ color: '#8b5cf6' }}>ClawHub</span> 技能市场
         </h1>
-        <p style={{ color: '#666', fontSize: '0.9rem' }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
           搜索来自 <a href="https://clawhub.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#8b5cf6' }}>clawhub.ai</a> 的
           OpenClaw 社区技能 — 52,000+ 技能可供浏览
         </p>
@@ -95,7 +95,7 @@ export default function ClawHubPage() {
           style={{
             flex: 1,
             padding: '0.6rem 1rem',
-            border: '1px solid #ddd',
+            border: '1px solid var(--border-strong)',
             borderRadius: '8px',
             fontSize: '0.95rem',
             outline: 'none',
@@ -136,13 +136,13 @@ export default function ClawHubPage() {
             </h2>
             <button
               onClick={() => setDetail(null)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: '#999' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--text-muted)' }}
             >
               ✕
             </button>
           </div>
-          <p style={{ color: '#555', margin: '0.5rem 0', lineHeight: '1.5' }}>{detail.skill.summary}</p>
-          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: '#666', flexWrap: 'wrap' }}>
+          <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0', lineHeight: '1.5' }}>{detail.skill.summary}</p>
+          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
             <span>↓ {detail.skill.stats.downloads.toLocaleString()} 下载</span>
             <span>★ {detail.skill.stats.stars} 星</span>
             <span>{detail.skill.stats.versions} 个版本</span>
@@ -151,7 +151,7 @@ export default function ClawHubPage() {
           {detail.latestVersion?.changelog && (
             <div style={{ marginTop: '0.75rem', fontSize: '0.85rem' }}>
               <strong>更新日志:</strong>
-              <p style={{ color: '#555', marginTop: '0.25rem', whiteSpace: 'pre-wrap', maxHeight: '120px', overflow: 'auto' }}>
+              <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem', whiteSpace: 'pre-wrap', maxHeight: '120px', overflow: 'auto' }}>
                 {detail.latestVersion.changelog.slice(0, 500)}
               </p>
             </div>
@@ -159,7 +159,7 @@ export default function ClawHubPage() {
           {detail.latestVersion?.files && detail.latestVersion.files.length > 0 && (
             <div style={{ marginTop: '0.75rem', fontSize: '0.85rem' }}>
               <strong>文件:</strong>
-              <div style={{ marginTop: '0.25rem', color: '#555' }}>
+              <div style={{ marginTop: '0.25rem', color: 'var(--text-secondary)' }}>
                 {detail.latestVersion.files.map((f) => (
                   <span key={f.path} style={{ marginRight: '1rem' }}>
                     {f.path} ({(f.size / 1024).toFixed(1)}KB)
@@ -197,7 +197,7 @@ export default function ClawHubPage() {
 
       {/* Results */}
       {searched && !loading && results.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
           <p style={{ fontSize: '1.1rem' }}>未找到匹配的 ClawHub 技能</p>
           <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
             尝试其他关键词，如 &quot;github&quot;、&quot;docker&quot;、&quot;kubernetes&quot;
@@ -233,10 +233,10 @@ export default function ClawHubPage() {
                   ClawHub
                 </span>
               </div>
-              <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '0.25rem', lineHeight: '1.5' }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem', lineHeight: '1.5' }}>
                 {item.summary?.slice(0, 160)}{(item.summary?.length ?? 0) > 160 ? '...' : ''}
               </p>
-              <div style={{ marginTop: '0.4rem', fontSize: '0.8rem', color: '#999', display: 'flex', gap: '0.75rem' }}>
+              <div style={{ marginTop: '0.4rem', fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: '0.75rem' }}>
                 <span>{item.slug}</span>
                 {item.version && <span>v{item.version}</span>}
                 {item.updatedAt && (
@@ -249,7 +249,7 @@ export default function ClawHubPage() {
       )}
 
       {!searched && (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
           <p style={{ fontSize: '1.1rem' }}>输入关键词搜索 ClawHub 社区技能</p>
           <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
             热门搜索: github · docker · kubernetes · aws · git · python

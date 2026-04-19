@@ -34,16 +34,16 @@ export default function AdminPage() {
   }, [token, fetchStats]);
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>加载中...</div>;
+    return <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>加载中...</div>;
   }
 
   if (!stats) {
-    return <div style={{ color: '#dc2626' }}>无法加载统计数据</div>;
+    return <div style={{ color: 'var(--danger)' }}>无法加载统计数据</div>;
   }
 
   const cardStyle = {
-    background: '#fff',
-    border: '1px solid #eee',
+    background: 'var(--bg)',
+    border: '1px solid var(--border)',
     borderRadius: '10px',
     padding: '1.25rem',
     textAlign: 'center' as const,
@@ -56,18 +56,18 @@ export default function AdminPage() {
       {/* Stats Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <div style={cardStyle}>
-          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#0070f3' }}>{stats.totalUsers}</div>
-          <div style={{ fontSize: '0.85rem', color: '#666' }}>总用户数</div>
+          <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--accent)' }}>{stats.totalUsers}</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>总用户数</div>
           {stats.todayUsers > 0 && <div style={{ fontSize: '0.75rem', color: '#22c55e', marginTop: '0.25rem' }}>+{stats.todayUsers} 今日</div>}
         </div>
         <div style={cardStyle}>
           <div style={{ fontSize: '2rem', fontWeight: 700, color: '#7c3aed' }}>{stats.totalSkills}</div>
-          <div style={{ fontSize: '0.85rem', color: '#666' }}>总技能数</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>总技能数</div>
           {stats.todaySkills > 0 && <div style={{ fontSize: '0.75rem', color: '#22c55e', marginTop: '0.25rem' }}>+{stats.todaySkills} 今日</div>}
         </div>
         <div style={cardStyle}>
-          <div style={{ fontSize: '2rem', fontWeight: 700, color: '#dc2626' }}>{stats.totalDownloads.toLocaleString()}</div>
-          <div style={{ fontSize: '0.85rem', color: '#666' }}>总下载量</div>
+          <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--danger)' }}>{stats.totalDownloads.toLocaleString()}</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>总下载量</div>
         </div>
       </div>
 
@@ -83,9 +83,9 @@ export default function AdminPage() {
 function TrendChart({ title, data, color }: { title: string; data: { date: string; count: number }[]; color: string }) {
   if (data.length === 0) {
     return (
-      <div style={{ border: '1px solid #eee', borderRadius: '10px', padding: '1.25rem' }}>
+      <div style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '1.25rem' }}>
         <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>{title}</h3>
-        <div style={{ color: '#999', textAlign: 'center', padding: '2rem' }}>暂无数据</div>
+        <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>暂无数据</div>
       </div>
     );
   }
@@ -97,10 +97,10 @@ function TrendChart({ title, data, color }: { title: string; data: { date: strin
   const total = data.reduce((sum, d) => sum + d.count, 0);
 
   return (
-    <div style={{ border: '1px solid #eee', borderRadius: '10px', padding: '1.25rem' }}>
+    <div style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '1.25rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem' }}>
         <h3 style={{ fontSize: '1rem', margin: 0 }}>{title}</h3>
-        <span style={{ fontSize: '0.85rem', color: '#999' }}>总计: {total}</span>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>总计: {total}</span>
       </div>
       <div style={{ overflowX: 'auto' }}>
         <svg width={Math.max(chartWidth, 200)} height={chartHeight + 20} style={{ display: 'block' }}>

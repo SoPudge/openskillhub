@@ -88,7 +88,7 @@ export default function AdminTagsPage() {
         <h1>标签管理</h1>
         <button
           onClick={() => setShowMerge(!showMerge)}
-          style={{ padding: '0.5rem 1rem', background: showMerge ? '#dc2626' : '#111', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}
+          style={{ padding: '0.5rem 1rem', background: showMerge ? 'var(--danger)' : 'var(--text)', color: 'var(--bg)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}
         >
           {showMerge ? '取消合并' : '🔀 合并标签'}
         </button>
@@ -96,24 +96,24 @@ export default function AdminTagsPage() {
 
       {/* Merge panel */}
       {showMerge && (
-        <div style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem', background: '#fafafa' }}>
+        <div style={{ border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem', background: 'var(--bg-secondary)' }}>
           <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem' }}>合并标签</h3>
-          <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.75rem' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
             点击下方标签选择要合并的源标签，输入目标标签名称。源标签将被删除，关联的技能将转移到目标标签。
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem' }}>
             <span style={{ fontSize: '0.85rem' }}>已选 {mergeSource.length} 个</span>
-            <span style={{ fontSize: '0.85rem', color: '#999' }}>→</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>→</span>
             <input
               value={mergeTarget}
               onChange={(e) => setMergeTarget(e.target.value)}
               placeholder="目标标签名称"
-              style={{ padding: '0.4rem 0.6rem', border: '1px solid #ddd', borderRadius: '4px', fontSize: '0.85rem' }}
+              style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-strong)', borderRadius: '4px', fontSize: '0.85rem' }}
             />
             <button
               onClick={executeMerge}
               disabled={actionLoading || mergeSource.length === 0 || !mergeTarget.trim()}
-              style={{ padding: '0.4rem 1rem', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', opacity: mergeSource.length === 0 ? 0.5 : 1 }}
+              style={{ padding: '0.4rem 1rem', background: 'var(--danger)', color: 'var(--bg)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', opacity: mergeSource.length === 0 ? 0.5 : 1 }}
             >
               执行合并
             </button>
@@ -121,25 +121,25 @@ export default function AdminTagsPage() {
         </div>
       )}
 
-      <div style={{ fontSize: '0.85rem', color: '#999', marginBottom: '0.75rem' }}>
+      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
         共 {tags.length} 个标签
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>加载中...</div>
+        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>加载中...</div>
       ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
           {tags.map((tag) => (
             <div
               key={tag.id}
               style={{
-                border: mergeSource.includes(tag.slug) ? '2px solid #dc2626' : '1px solid #eee',
+                border: mergeSource.includes(tag.slug) ? '2px solid var(--danger)' : '1px solid var(--border)',
                 borderRadius: '8px',
                 padding: '0.5rem 0.75rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                background: mergeSource.includes(tag.slug) ? '#fef2f2' : '#fff',
+                background: mergeSource.includes(tag.slug) ? '#fef2f2' : 'var(--bg)',
                 cursor: showMerge ? 'pointer' : 'default',
               }}
               onClick={showMerge ? () => toggleMergeSource(tag.slug) : undefined}
@@ -150,7 +150,7 @@ export default function AdminTagsPage() {
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && renameTag(tag.slug)}
-                    style={{ padding: '0.2rem 0.4rem', border: '1px solid #ddd', borderRadius: '3px', fontSize: '0.85rem', width: '100px' }}
+                    style={{ padding: '0.2rem 0.4rem', border: '1px solid var(--border-strong)', borderRadius: '3px', fontSize: '0.85rem', width: '100px' }}
                     autoFocus
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -162,7 +162,7 @@ export default function AdminTagsPage() {
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setEditSlug(null); }}
-                    style={{ padding: '0.15rem 0.4rem', fontSize: '0.75rem', border: '1px solid #ddd', borderRadius: '3px', cursor: 'pointer', background: '#fff' }}
+                    style={{ padding: '0.15rem 0.4rem', fontSize: '0.75rem', border: '1px solid var(--border-strong)', borderRadius: '3px', cursor: 'pointer', background: 'var(--bg)' }}
                   >
                     ✕
                   </button>
@@ -170,7 +170,7 @@ export default function AdminTagsPage() {
               ) : (
                 <>
                   <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{tag.name}</span>
-                  <span style={{ fontSize: '0.75rem', color: '#999' }}>({tag._count.skills})</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>({tag._count.skills})</span>
                   {!showMerge && (
                     <div style={{ display: 'flex', gap: '0.15rem' }}>
                       <button
@@ -192,7 +192,7 @@ export default function AdminTagsPage() {
             </div>
           ))}
           {tags.length === 0 && (
-            <div style={{ color: '#999', padding: '2rem', textAlign: 'center', width: '100%' }}>暂无标签</div>
+            <div style={{ color: 'var(--text-muted)', padding: '2rem', textAlign: 'center', width: '100%' }}>暂无标签</div>
           )}
         </div>
       )}

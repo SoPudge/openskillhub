@@ -24,7 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [user, loading, router]);
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '4rem', color: '#999' }}>加载中...</div>;
+    return <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>加载中...</div>;
   }
 
   if (!user || user.role !== 'admin') return null;
@@ -34,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <nav style={{ width: '200px', flexShrink: 0 }}>
         <div style={{ position: 'sticky', top: '1rem' }}>
-          <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1rem', color: '#dc2626' }}>
+          <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--danger)' }}>
             管理后台
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -49,7 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   padding: '0.5rem 0.75rem',
                   borderRadius: '6px',
                   textDecoration: 'none',
-                  color: '#333',
+                  color: 'var(--text)',
                   fontSize: '0.9rem',
                 }}
               >
@@ -58,8 +58,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </Link>
             ))}
           </div>
-          <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
-            <Link href="/dashboard" style={{ fontSize: '0.85rem', color: '#666' }}>
+          <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+            <Link href="/dashboard" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               ← 返回 Dashboard
             </Link>
           </div>
