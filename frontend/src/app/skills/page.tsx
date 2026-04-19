@@ -51,7 +51,19 @@ export default async function SkillsPage({
 
   return (
     <div>
-      <h1 style={{ marginBottom: '1.5rem' }}>技能库</h1>
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.06))',
+        borderRadius: '16px',
+        padding: '2rem',
+        marginBottom: '1.5rem',
+        border: '1px solid var(--border)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #667eea, #764ba2, #f093fb)' }} />
+        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.25rem' }}>技能库</h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>搜索、筛选、发现适合你的 AI Agent 技能</p>
+      </div>
 
       {/* 筛选区域 (客户端交互组件) */}
       <Suspense fallback={null}>
@@ -66,10 +78,10 @@ export default async function SkillsPage({
           alignItems: 'center',
           marginBottom: '1rem',
           fontSize: '0.85rem',
-          color: '#999',
+          color: 'var(--text-muted)',
         }}
       >
-        <span>共 {result.total} 个技能</span>
+        <span>共 <strong style={{ color: 'var(--text)' }}>{result.total}</strong> 个技能</span>
         {result.totalPages > 1 && (
           <span>
             第 {result.page} / {result.totalPages} 页
@@ -79,7 +91,7 @@ export default async function SkillsPage({
 
       {/* 技能列表 */}
       {result.data.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
           <p style={{ fontSize: '1.1rem' }}>未找到匹配的技能</p>
           <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
             尝试调整搜索关键词或筛选条件
@@ -94,61 +106,72 @@ export default async function SkillsPage({
               <Link
                 key={skill.id}
                 href={`/skills/${skill.name}`}
+                className="skill-card"
                 style={{
                   border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  padding: '1rem',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
                   display: 'block',
                   textDecoration: 'none',
                   color: 'inherit',
-                  transition: 'border-color 0.15s',
+                  background: 'var(--bg-secondary)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #667eea, #764ba2, #f093fb)', borderRadius: '12px 12px 0 0' }} />
                 <div
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'baseline',
+                    alignItems: 'flex-start',
                   }}
                 >
-                  <h3 style={{ fontSize: '1.05rem' }}>{highlightText(skill.displayName, params.q)}</h3>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 600 }}>{highlightText(skill.displayName, params.q)}</h3>
+                  <span style={{
+                    fontSize: '0.75rem', fontWeight: 600,
+                    color: 'var(--accent)', background: 'var(--accent-bg)',
+                    padding: '0.15rem 0.5rem', borderRadius: '10px', whiteSpace: 'nowrap',
+                  }}>
                     ↓ {skill.downloadCount}
                   </span>
                 </div>
                 <p
                   style={{
                     color: 'var(--text-secondary)',
-                    fontSize: '0.9rem',
-                    marginTop: '0.25rem',
+                    fontSize: '0.875rem',
+                    marginTop: '0.4rem',
                     lineHeight: '1.5',
                   }}
                 >
                   {(() => {
-                    const desc = skill.description?.slice(0, 160) ?? '';
-                    const ellipsis = (skill.description?.length ?? 0) > 160 ? '...' : '';
+                    const desc = skill.description?.slice(0, 140) ?? '';
+                    const ellipsis = (skill.description?.length ?? 0) > 140 ? '...' : '';
                     return <>{highlightText(desc, params.q)}{ellipsis}</>;
                   })()}
                 </p>
                 {/* 元信息行 */}
                 <div
                   style={{
-                    marginTop: '0.5rem',
+                    marginTop: '0.75rem',
                     display: 'flex',
-                    gap: '0.75rem',
+                    gap: '0.5rem',
                     fontSize: '0.8rem',
                     color: 'var(--text-muted)',
                     flexWrap: 'wrap',
                     alignItems: 'center',
                   }}
                 >
-                  {skill.author && <span>@{skill.author.username}</span>}
+                  {skill.author && <span style={{ fontWeight: 500 }}>@{skill.author.username}</span>}
                   {skill.category && (
                     <span
                       style={{
-                        background: '#f0f0f0',
-                        padding: '0.1rem 0.4rem',
-                        borderRadius: '3px',
+                        background: 'var(--accent-bg)',
+                        color: 'var(--accent)',
+                        padding: '0.1rem 0.45rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
                       }}
                     >
                       {skill.category.name}
@@ -159,9 +182,11 @@ export default async function SkillsPage({
                       <span
                         key={tag.slug}
                         style={{
-                          background: '#f8f8f8',
-                          padding: '0.1rem 0.4rem',
-                          borderRadius: '3px',
+                          background: 'linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.06))',
+                          border: '1px solid rgba(102,126,234,0.12)',
+                          padding: '0.1rem 0.45rem',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
                         }}
                       >
                         #{tag.name}
@@ -173,11 +198,12 @@ export default async function SkillsPage({
                         <span
                           key={a}
                           style={{
-                            background: '#e6f4ea',
-                            color: '#137333',
-                            padding: '0.1rem 0.4rem',
-                            borderRadius: '3px',
-                            fontSize: '0.75rem',
+                            background: 'var(--success-bg)',
+                            color: 'var(--success)',
+                            padding: '0.1rem 0.45rem',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            fontWeight: 500,
                           }}
                         >
                           {AGENT_LABELS[a as AgentType] || a}
@@ -207,9 +233,11 @@ export default async function SkillsPage({
                   href={`/skills?${new URLSearchParams({ ...params, page: String(result.page - 1) }).toString()}`}
                   style={{
                     padding: '0.4rem 0.75rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
                     fontSize: '0.85rem',
+                    color: 'var(--text)',
+                    textDecoration: 'none',
                   }}
                 >
                   ← 上一页
@@ -228,18 +256,19 @@ export default async function SkillsPage({
                   return (
                     <span key={p} style={{ display: 'contents' }}>
                       {showEllipsis && (
-                        <span style={{ padding: '0.4rem 0.25rem', color: '#999' }}>…</span>
+                        <span style={{ padding: '0.4rem 0.25rem', color: 'var(--text-muted)' }}>…</span>
                       )}
                       <Link
                         href={`/skills?${new URLSearchParams({ ...params, page: String(p) }).toString()}`}
                         style={{
                           padding: '0.4rem 0.75rem',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
+                          border: p === result.page ? 'none' : '1px solid var(--border)',
+                          borderRadius: '8px',
                           fontWeight: p === result.page ? 'bold' : 'normal',
-                          background: p === result.page ? '#0070f3' : 'white',
-                          color: p === result.page ? 'white' : 'inherit',
+                          background: p === result.page ? 'linear-gradient(135deg, #667eea, #764ba2)' : 'transparent',
+                          color: p === result.page ? 'white' : 'var(--text)',
                           fontSize: '0.85rem',
+                          textDecoration: 'none',
                         }}
                       >
                         {p}
@@ -252,9 +281,11 @@ export default async function SkillsPage({
                   href={`/skills?${new URLSearchParams({ ...params, page: String(result.page + 1) }).toString()}`}
                   style={{
                     padding: '0.4rem 0.75rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
                     fontSize: '0.85rem',
+                    color: 'var(--text)',
+                    textDecoration: 'none',
                   }}
                 >
                   下一页 →
