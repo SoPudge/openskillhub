@@ -1,4 +1,4 @@
-import type { AgentType, Visibility, TeamRole, UserRole } from './constants';
+import type { AgentType, Visibility, TeamRole, UserRole } from './constants.js';
 
 // ─── User ───────────────────────────────────────────────
 export interface User {
