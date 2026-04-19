@@ -363,3 +363,15 @@ mark {
   box-shadow: var(--card-shadow), 0 8px 20px rgba(102,126,234,0.1);
   border-color: var(--accent) !important;
 }
+
+.skill-download-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(102,126,234,0.35);
+}
+
+.skill-detail-header {
+  transition: box-shadow 0.2s ease;
+}
+.skill-detail-header:hover {
+  box-shadow: 0 4px 20px rgba(102,126,234,0.08);
+}
