@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AGENT_TYPES, VISIBILITY_TYPES, USER_ROLES } from '@openskillhub/shared';
+import { AppError, ErrorCode } from './errors.js';
 
 // ─── Auth ───────────────────────────────────────────────
 export const RegisterSchema = z.object({
@@ -41,15 +42,19 @@ export const SkillUpdateSchema = z.object({
   tags: z.array(z.string().max(64)).max(20).optional(),
 });
 
-export const SkillListQuerySchema = z.object({
+// ─── Pagination ─────────────────────────────────────────
+export const PaginationSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export const SkillListQuerySchema = PaginationSchema.extend({
   q: z.string().max(200).optional(),
   category: z.string().max(64).optional(),
   tag: z.string().max(200).optional(),
   agent: z.string().optional(),
   author: z.string().max(64).optional(),
   sort: z.enum(['downloads', 'updated', 'name', 'created']).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
 // ─── Versions ───────────────────────────────────────────
@@ -88,12 +93,6 @@ export const StatsQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(365).optional().default(30),
 });
 
-// ─── Pagination ─────────────────────────────────────────
-export const PaginationSchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-});
-
 // ─── Params ─────────────────────────────────────────────
 export const NameParamSchema = z.object({
   name: z.string().min(1).max(64),
@@ -129,6 +128,13 @@ export function validate<T>(schema: z.ZodSchema<T>, data: unknown): { success: t
   if (result.success) return { success: true, data: result.data };
   const messages = result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
   return { success: false, error: messages };
+}
+
+export function validateOrThrow<T>(schema: z.ZodSchema<T>, data: unknown): T {
+  const result = schema.safeParse(data);
+  if (result.success) return result.data;
+  const messages = result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
+  throw new AppError(400, ErrorCode.VALIDATION_FAILED, messages);
 }
 
 // ─── Admin ──────────────────────────────────────────────

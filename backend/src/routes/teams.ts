@@ -1,19 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma, USER_SELECT } from '../lib/prisma.js';
 import { authenticate } from './auth.js';
-import { validate, TeamCreateSchema, TeamUpdateSchema, TeamMemberAddSchema, SlugParamSchema, SlugMemberParamSchema, PaginationSchema } from '../lib/validation.js';
+import { validateOrThrow, TeamCreateSchema, TeamUpdateSchema, TeamMemberAddSchema, SlugParamSchema, SlugMemberParamSchema, PaginationSchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
-import { assertTeamRole } from '../lib/helpers.js';
+import { assertTeamRole, getTeamOrThrow } from '../lib/helpers.js';
 
 export async function teamRoutes(app: FastifyInstance) {
   // Create team
   app.post('/', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
-
-    const v = validate(TeamCreateSchema, request.body);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-    const { name, slug } = v.data;
+    const userId = await authenticate(request);
+    const { name, slug } = validateOrThrow(TeamCreateSchema, request.body);
 
     const existing = await prisma.team.findUnique({ where: { slug } });
     if (existing) {
@@ -40,8 +36,7 @@ export async function teamRoutes(app: FastifyInstance) {
 
   // List my teams
   app.get('/', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
+    const userId = await authenticate(request);
 
     const teams = await prisma.team.findMany({
       where: { members: { some: { userId } } },
@@ -57,11 +52,10 @@ export async function teamRoutes(app: FastifyInstance) {
 
   // Get team by slug
   app.get('/:slug', async (request, reply) => {
-    const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
+    const { slug } = validateOrThrow(SlugParamSchema, request.params);
 
     const team = await prisma.team.findUnique({
-      where: { slug: pv.data.slug },
+      where: { slug },
       include: {
         owner: { select: USER_SELECT },
         members: {
@@ -78,46 +72,37 @@ export async function teamRoutes(app: FastifyInstance) {
 
   // Update team
   app.patch('/:slug', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
+    const userId = await authenticate(request);
+    const { slug } = validateOrThrow(SlugParamSchema, request.params);
+    const data = validateOrThrow(TeamUpdateSchema, request.body);
 
-    const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-    const v = validate(TeamUpdateSchema, request.body);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-
-    const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
-    if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
+    const team = await getTeamOrThrow(slug);
 
     // Only owner or admin can update
     await assertTeamRole(team.id, userId, ['owner', 'admin'], ErrorCode.TEAM_NOT_ADMIN, 'Insufficient permissions');
 
     const updated = await prisma.team.update({
       where: { id: team.id },
-      data: v.data,
+      data,
     });
 
-    request.log.info({ userId, teamSlug: pv.data.slug, fields: Object.keys(v.data) }, 'Team updated');
+    request.log.info({ userId, teamSlug: slug, fields: Object.keys(data) }, 'Team updated');
     return updated;
   });
 
   // Delete team
   app.delete('/:slug', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
+    const userId = await authenticate(request);
+    const { slug } = validateOrThrow(SlugParamSchema, request.params);
 
-    const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-
-    const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
-    if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
+    const team = await getTeamOrThrow(slug);
     if (team.ownerId !== userId) {
-      request.log.warn({ userId, teamSlug: pv.data.slug }, 'Team delete denied: not owner');
+      request.log.warn({ userId, teamSlug: slug }, 'Team delete denied: not owner');
       throw new AppError(403, ErrorCode.TEAM_NOT_OWNER, 'Only the owner can delete the team');
     }
 
     await prisma.team.delete({ where: { id: team.id } });
-    request.log.info({ userId, teamSlug: pv.data.slug }, 'Team deleted');
+    request.log.info({ userId, teamSlug: slug }, 'Team deleted');
     return reply.status(204).send();
   });
 
@@ -125,27 +110,22 @@ export async function teamRoutes(app: FastifyInstance) {
 
   // Add member
   app.post('/:slug/members', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
+    const userId = await authenticate(request);
+    const { slug } = validateOrThrow(SlugParamSchema, request.params);
+    const { username, role } = validateOrThrow(TeamMemberAddSchema, request.body);
 
-    const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-    const v = validate(TeamMemberAddSchema, request.body);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-
-    const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
-    if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
+    const team = await getTeamOrThrow(slug);
 
     // Only owner or admin can add members
     const membership = await assertTeamRole(team.id, userId, ['owner', 'admin'], ErrorCode.TEAM_NOT_ADMIN, 'Insufficient permissions');
 
     // Only owner can assign admin role
-    if (v.data.role === 'admin' && membership.role !== 'owner') {
-      request.log.warn({ userId, teamSlug: pv.data.slug, targetRole: 'admin' }, 'Admin role assign denied: not owner');
+    if (role === 'admin' && membership.role !== 'owner') {
+      request.log.warn({ userId, teamSlug: slug, targetRole: 'admin' }, 'Admin role assign denied: not owner');
       throw new AppError(403, ErrorCode.TEAM_NOT_OWNER, 'Only the owner can assign admin role');
     }
 
-    const targetUser = await prisma.user.findUnique({ where: { username: v.data.username } });
+    const targetUser = await prisma.user.findUnique({ where: { username } });
     if (!targetUser) throw new AppError(404, ErrorCode.USER_NOT_FOUND, 'User not found');
 
     const existing = await prisma.teamMember.findUnique({
@@ -154,38 +134,34 @@ export async function teamRoutes(app: FastifyInstance) {
     if (existing) throw new AppError(409, ErrorCode.TEAM_MEMBER_EXISTS, 'User is already a member');
 
     const member = await prisma.teamMember.create({
-      data: { teamId: team.id, userId: targetUser.id, role: v.data.role },
+      data: { teamId: team.id, userId: targetUser.id, role },
       include: { user: { select: USER_SELECT } },
     });
 
-    request.log.info({ userId, teamSlug: pv.data.slug, targetUsername: v.data.username, role: v.data.role }, 'Team member added');
+    request.log.info({ userId, teamSlug: slug, targetUsername: username, role }, 'Team member added');
     return reply.status(201).send(member);
   });
 
   // Remove member
   app.delete('/:slug/members/:username', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
+    const userId = await authenticate(request);
+    const { slug, username } = validateOrThrow(SlugMemberParamSchema, request.params);
 
-    const pv = validate(SlugMemberParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-
-    const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
-    if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
+    const team = await getTeamOrThrow(slug);
 
     // Only owner or admin can remove; members can remove themselves
     const membership = await prisma.teamMember.findUnique({
       where: { teamId_userId: { teamId: team.id, userId } },
     });
 
-    const targetUser = await prisma.user.findUnique({ where: { username: pv.data.username } });
+    const targetUser = await prisma.user.findUnique({ where: { username } });
     if (!targetUser) throw new AppError(404, ErrorCode.USER_NOT_FOUND, 'User not found');
 
     const isSelf = targetUser.id === userId;
     const isAdminOrOwner = membership && ['owner', 'admin'].includes(membership.role);
 
     if (!isSelf && !isAdminOrOwner) {
-      request.log.warn({ userId, teamSlug: pv.data.slug, action: 'removeMember' }, 'Team member remove denied');
+      request.log.warn({ userId, teamSlug: slug, action: 'removeMember' }, 'Team member remove denied');
       throw new AppError(403, ErrorCode.TEAM_NOT_ADMIN, 'Insufficient permissions');
     }
 
@@ -198,21 +174,17 @@ export async function teamRoutes(app: FastifyInstance) {
       where: { teamId_userId: { teamId: team.id, userId: targetUser.id } },
     });
 
-    request.log.info({ userId, teamSlug: pv.data.slug, targetUsername: pv.data.username }, 'Team member removed');
+    request.log.info({ userId, teamSlug: slug, targetUsername: username }, 'Team member removed');
     return reply.status(204).send();
   });
 
   // List members
   app.get('/:slug/members', async (request, reply) => {
-    const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
+    const { slug } = validateOrThrow(SlugParamSchema, request.params);
 
-    const team = await prisma.team.findUnique({ where: { slug: pv.data.slug } });
-    if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
+    const team = await getTeamOrThrow(slug);
 
-    const qv = validate(PaginationSchema, request.query);
-    if (!qv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, qv.error);
-    const { page, limit } = qv.data;
+    const { page, limit } = validateOrThrow(PaginationSchema, request.query);
 
     const [members, total] = await Promise.all([
       prisma.teamMember.findMany({

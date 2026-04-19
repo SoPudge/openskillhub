@@ -1,20 +1,17 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { authenticate } from './auth.js';
-import { validate, VersionCreateSchema, NameParamSchema, NameVersionParamSchema, PaginationSchema } from '../lib/validation.js';
+import { validateOrThrow, VersionCreateSchema, NameParamSchema, NameVersionParamSchema, PaginationSchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
 import { getSkillOrThrow, assertSkillAuthor, getVersionOrThrow, normalizeFileSize } from '../lib/helpers.js';
 
 export async function versionRoutes(app: FastifyInstance) {
   // List versions for a skill
   app.get('/:name/versions', async (request, reply) => {
-    const pv = validate(NameParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-    const qv = validate(PaginationSchema, request.query);
-    if (!qv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, qv.error);
-    const { page, limit } = qv.data;
+    const { name } = validateOrThrow(NameParamSchema, request.params);
+    const { page, limit } = validateOrThrow(PaginationSchema, request.query);
 
-    const skill = await getSkillOrThrow(pv.data.name);
+    const skill = await getSkillOrThrow(name);
 
     const [versions, total] = await Promise.all([
       prisma.skillVersion.findMany({
@@ -43,24 +40,19 @@ export async function versionRoutes(app: FastifyInstance) {
 
   // Create a new version
   app.post('/:name/versions', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
+    const userId = await authenticate(request);
+    const { name } = validateOrThrow(NameParamSchema, request.params);
 
-    const pv = validate(NameParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-
-    const skill = await getSkillOrThrow(pv.data.name);
+    const skill = await getSkillOrThrow(name);
     assertSkillAuthor(skill, userId);
 
-    const v = validate(VersionCreateSchema, request.body);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-    const { version, changelog } = v.data;
+    const { version, changelog } = validateOrThrow(VersionCreateSchema, request.body);
 
     const existing = await prisma.skillVersion.findUnique({
       where: { skillId_version: { skillId: skill.id, version } },
     });
     if (existing) {
-      request.log.warn({ skillName: pv.data.name, version }, 'Version conflict: already exists');
+      request.log.warn({ skillName: name, version }, 'Version conflict: already exists');
       throw new AppError(409, ErrorCode.VERSION_CONFLICT, 'Version already exists');
     }
 
@@ -68,19 +60,18 @@ export async function versionRoutes(app: FastifyInstance) {
       data: { skillId: skill.id, version, changelog },
     });
 
-    request.log.info({ userId, skillName: pv.data.name, version }, 'Version created');
+    request.log.info({ userId, skillName: name, version }, 'Version created');
     return reply.status(201).send(created);
   });
 
   // Get specific version
   app.get('/:name/versions/:version', async (request, reply) => {
-    const pv = validate(NameVersionParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
+    const { name, version: ver } = validateOrThrow(NameVersionParamSchema, request.params);
 
-    const skill = await getSkillOrThrow(pv.data.name);
+    const skill = await getSkillOrThrow(name);
 
     const version = await prisma.skillVersion.findUnique({
-      where: { skillId_version: { skillId: skill.id, version: pv.data.version } },
+      where: { skillId_version: { skillId: skill.id, version: ver } },
       include: {
         packages: { select: { agentType: true, fileSize: true, checksumSha256: true } },
       },

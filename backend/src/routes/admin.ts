@@ -1,11 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
-import { createStorage } from '../storage/index.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
 import { authenticate } from './auth.js';
-import { requireAdmin, formatSkill, slugifyTag, buildSkillOrderBy } from '../lib/helpers.js';
+import { requireAdmin, formatSkill, slugifyTag, buildSkillOrderBy, fullTextSearchIds, deleteSkillWithCleanup } from '../lib/helpers.js';
 import {
-  validate,
+  validateOrThrow,
   AdminUserUpdateSchema,
   AdminUserListSchema,
   AdminSkillUpdateSchema,
@@ -26,8 +25,7 @@ import {
 export async function adminRoutes(app: FastifyInstance) {
   // ─── Pre-handler: authenticate + require admin ────────
   app.addHook('preHandler', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
+    const userId = await authenticate(request);
     await requireAdmin(userId);
     // Attach userId to request for downstream use
     (request as any).adminUserId = userId;
@@ -83,9 +81,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // List users
   app.get('/users', async (request) => {
-    const v = validate(AdminUserListSchema, request.query);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-    const { q, role, banned, page, limit } = v.data;
+    const { q, role, banned, page, limit } = validateOrThrow(AdminUserListSchema, request.query);
 
     const where: Record<string, unknown> = {};
     if (q) {
@@ -118,11 +114,10 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // Get user detail
   app.get('/users/:id', async (request) => {
-    const pv = validate(IdParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
+    const { id } = validateOrThrow(IdParamSchema, request.params);
 
     const user = await prisma.user.findUnique({
-      where: { id: pv.data.id },
+      where: { id },
       select: {
         id: true, email: true, username: true, displayName: true, avatarUrl: true,
         role: true, banned: true, createdAt: true, updatedAt: true,
@@ -144,37 +139,34 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // Update user (role / banned)
   app.patch('/users/:id', async (request) => {
-    const pv = validate(IdParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-    const bv = validate(AdminUserUpdateSchema, request.body);
-    if (!bv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, bv.error);
+    const { id } = validateOrThrow(IdParamSchema, request.params);
+    const data = validateOrThrow(AdminUserUpdateSchema, request.body);
 
     const adminUserId = (request as any).adminUserId;
-    if (pv.data.id === adminUserId && bv.data.role && bv.data.role !== 'admin') {
+    if (id === adminUserId && data.role && data.role !== 'admin') {
       throw new AppError(400, ErrorCode.VALIDATION_FAILED, 'Cannot demote yourself');
     }
 
     const user = await prisma.user.update({
-      where: { id: pv.data.id },
-      data: bv.data,
+      where: { id },
+      data,
       select: { id: true, username: true, role: true, banned: true },
     });
-    request.log.info({ targetUserId: user.id, changes: bv.data }, 'Admin updated user');
+    request.log.info({ targetUserId: user.id, changes: data }, 'Admin updated user');
     return user;
   });
 
   // Delete user
   app.delete('/users/:id', async (request) => {
-    const pv = validate(IdParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
+    const { id } = validateOrThrow(IdParamSchema, request.params);
 
     const adminUserId = (request as any).adminUserId;
-    if (pv.data.id === adminUserId) {
+    if (id === adminUserId) {
       throw new AppError(400, ErrorCode.VALIDATION_FAILED, 'Cannot delete yourself');
     }
 
-    await prisma.user.delete({ where: { id: pv.data.id } });
-    request.log.info({ targetUserId: pv.data.id }, 'Admin deleted user');
+    await prisma.user.delete({ where: { id } });
+    request.log.info({ targetUserId: id }, 'Admin deleted user');
     return { success: true };
   });
 
@@ -184,18 +176,16 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // List all skills (admin view — includes private/team)
   app.get('/skills', async (request) => {
-    const v = validate(SkillListQuerySchema, request.query);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-    const { q, category, author, sort, page, limit } = v.data;
+    const { q, category, author, sort, page, limit } = validateOrThrow(SkillListQuerySchema, request.query);
 
     const where: Record<string, unknown> = {};
     // No visibility filter — admin sees everything
     if (q) {
-      where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { displayName: { contains: q, mode: 'insensitive' } },
-        { description: { contains: q, mode: 'insensitive' } },
-      ];
+      const ids = await fullTextSearchIds(q);
+      if (ids.length === 0) {
+        return { data: [], total: 0, page, limit, totalPages: 0 };
+      }
+      where.id = { in: ids };
     }
     if (category) where.category = { slug: category };
     if (author) where.author = { username: author };
@@ -229,15 +219,14 @@ export async function adminRoutes(app: FastifyInstance) {
   // Update skill (featured / visibility)
   app.patch('/skills/:name', async (request) => {
     const name = (request.params as { name: string }).name;
-    const bv = validate(AdminSkillUpdateSchema, request.body);
-    if (!bv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, bv.error);
+    const data = validateOrThrow(AdminSkillUpdateSchema, request.body);
 
     const skill = await prisma.skill.update({
       where: { name },
-      data: bv.data,
+      data,
       select: { id: true, name: true, featured: true, visibility: true },
     });
-    request.log.info({ skillName: name, changes: bv.data }, 'Admin updated skill');
+    request.log.info({ skillName: name, changes: data }, 'Admin updated skill');
     return skill;
   });
 
@@ -245,26 +234,12 @@ export async function adminRoutes(app: FastifyInstance) {
   app.delete('/skills/:name', async (request) => {
     const name = (request.params as { name: string }).name;
 
-    const skill = await prisma.skill.findUnique({
-      where: { name },
-      include: { versions: { include: { packages: true } } },
-    });
+    const skill = await prisma.skill.findUnique({ where: { name }, select: { id: true } });
     if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
 
-    // Collect storage paths before cascading delete
-    const filePaths = skill.versions.flatMap((v) => v.packages.map((p) => p.filePath));
+    const packageCount = await deleteSkillWithCleanup(skill.id, request.log);
 
-    await prisma.skill.delete({ where: { name } });
-
-    // Best-effort cleanup of stored files
-    const storage = createStorage();
-    const results = await Promise.allSettled(filePaths.map((fp) => storage.delete(fp)));
-    const failed = results.filter((r) => r.status === 'rejected');
-    if (failed.length > 0) {
-      request.log.error({ skillName: name, failedCount: failed.length }, 'Admin delete: storage cleanup partially failed');
-    }
-
-    request.log.info({ skillId: skill.id, skillName: name, packageCount: filePaths.length }, 'Admin force-deleted skill');
+    request.log.info({ skillId: skill.id, skillName: name, packageCount }, 'Admin force-deleted skill');
     return { success: true };
   });
 
@@ -274,42 +249,38 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // Create category
   app.post('/categories', async (request) => {
-    const v = validate(AdminCategoryCreateSchema, request.body);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
+    const data = validateOrThrow(AdminCategoryCreateSchema, request.body);
 
-    const category = await prisma.category.create({ data: v.data });
-    request.log.info({ categorySlug: v.data.slug }, 'Admin created category');
+    const category = await prisma.category.create({ data });
+    request.log.info({ categorySlug: data.slug }, 'Admin created category');
     return category;
   });
 
   // Update category
   app.patch('/categories/:slug', async (request) => {
-    const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-    const bv = validate(AdminCategoryUpdateSchema, request.body);
-    if (!bv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, bv.error);
+    const { slug } = validateOrThrow(SlugParamSchema, request.params);
+    const data = validateOrThrow(AdminCategoryUpdateSchema, request.body);
 
     const category = await prisma.category.update({
-      where: { slug: pv.data.slug },
-      data: bv.data,
+      where: { slug },
+      data,
     });
-    request.log.info({ categorySlug: pv.data.slug, changes: bv.data }, 'Admin updated category');
+    request.log.info({ categorySlug: slug, changes: data }, 'Admin updated category');
     return category;
   });
 
   // Delete category
   app.delete('/categories/:slug', async (request) => {
-    const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
+    const { slug } = validateOrThrow(SlugParamSchema, request.params);
 
     // Unlink skills before deleting
     await prisma.skill.updateMany({
-      where: { category: { slug: pv.data.slug } },
+      where: { category: { slug } },
       data: { categoryId: null },
     });
 
-    await prisma.category.delete({ where: { slug: pv.data.slug } });
-    request.log.info({ categorySlug: pv.data.slug }, 'Admin deleted category');
+    await prisma.category.delete({ where: { slug } });
+    request.log.info({ categorySlug: slug }, 'Admin deleted category');
     return { success: true };
   });
 
@@ -328,37 +299,34 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // Rename tag
   app.patch('/tags/:slug', async (request) => {
-    const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-    const bv = validate(AdminTagUpdateSchema, request.body);
-    if (!bv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, bv.error);
+    const { slug } = validateOrThrow(SlugParamSchema, request.params);
+    const { name: newName } = validateOrThrow(AdminTagUpdateSchema, request.body);
 
-    const newSlug = slugifyTag(bv.data.name);
+    const newSlug = slugifyTag(newName);
     const tag = await prisma.tag.update({
-      where: { slug: pv.data.slug },
-      data: { name: bv.data.name, slug: newSlug },
+      where: { slug },
+      data: { name: newName, slug: newSlug },
     });
-    request.log.info({ oldSlug: pv.data.slug, newSlug }, 'Admin renamed tag');
+    request.log.info({ oldSlug: slug, newSlug }, 'Admin renamed tag');
     return tag;
   });
 
   // Merge tags
   app.post('/tags/merge', async (request) => {
-    const v = validate(AdminTagMergeSchema, request.body);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
+    const { source, target } = validateOrThrow(AdminTagMergeSchema, request.body);
 
-    const targetSlug = slugifyTag(v.data.target);
+    const targetSlug = slugifyTag(target);
 
     // Ensure target tag exists or create it
     const targetTag = await prisma.tag.upsert({
       where: { slug: targetSlug },
       update: {},
-      create: { name: v.data.target, slug: targetSlug },
+      create: { name: target, slug: targetSlug },
     });
 
     // Get source tag IDs
     const sourceTags = await prisma.tag.findMany({
-      where: { slug: { in: v.data.source.map(slugifyTag) } },
+      where: { slug: { in: source.map(slugifyTag) } },
       select: { id: true, slug: true },
     });
     const sourceIds = sourceTags.map((t) => t.id);
@@ -390,22 +358,21 @@ export async function adminRoutes(app: FastifyInstance) {
       await prisma.tag.deleteMany({ where: { id: { in: sourceIds } } });
     }
 
-    request.log.info({ source: v.data.source, target: v.data.target, merged: sourceIds.length }, 'Admin merged tags');
+    request.log.info({ source, target, merged: sourceIds.length }, 'Admin merged tags');
     return { success: true, target: targetTag, mergedCount: sourceIds.length };
   });
 
   // Delete tag
   app.delete('/tags/:slug', async (request) => {
-    const pv = validate(SlugParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
+    const { slug } = validateOrThrow(SlugParamSchema, request.params);
 
     // Remove all skill-tag relations first
-    const tag = await prisma.tag.findUnique({ where: { slug: pv.data.slug } });
+    const tag = await prisma.tag.findUnique({ where: { slug } });
     if (!tag) throw new AppError(404, ErrorCode.NOT_FOUND, 'Tag not found');
 
     await prisma.skillTagRelation.deleteMany({ where: { tagId: tag.id } });
-    await prisma.tag.delete({ where: { slug: pv.data.slug } });
-    request.log.info({ tagSlug: pv.data.slug }, 'Admin deleted tag');
+    await prisma.tag.delete({ where: { slug } });
+    request.log.info({ tagSlug: slug }, 'Admin deleted tag');
     return { success: true };
   });
 }

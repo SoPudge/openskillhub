@@ -1,5 +1,6 @@
 import { prisma } from './prisma.js';
 import { AppError, ErrorCode } from './errors.js';
+import { createStorage } from '../storage/index.js';
 
 // ─── Admin Check ────────────────────────────────────────
 
@@ -38,7 +39,38 @@ export async function getVersionOrThrow(skillId: string, version: string) {
   return v;
 }
 
+// ─── Skill Delete with Storage Cleanup ──────────────────
+
+export async function deleteSkillWithCleanup(
+  skillId: string,
+  log: { error: (obj: Record<string, unknown>, msg: string) => void },
+): Promise<number> {
+  const packages = await prisma.skillPackage.findMany({
+    where: { skillVersion: { skillId } },
+    select: { filePath: true },
+  });
+
+  await prisma.skill.delete({ where: { id: skillId } });
+
+  if (packages.length > 0) {
+    const storage = createStorage();
+    const results = await Promise.allSettled(packages.map((pkg) => storage.delete(pkg.filePath)));
+    const failed = results.filter((r) => r.status === 'rejected');
+    if (failed.length > 0) {
+      log.error({ skillId, failedCount: failed.length }, 'Storage cleanup partially failed');
+    }
+  }
+
+  return packages.length;
+}
+
 // ─── Team Permission ────────────────────────────────────
+
+export async function getTeamOrThrow(slug: string) {
+  const team = await prisma.team.findUnique({ where: { slug } });
+  if (!team) throw new AppError(404, ErrorCode.TEAM_NOT_FOUND, 'Team not found');
+  return team;
+}
 
 export async function assertTeamRole(
   teamId: string,
@@ -78,6 +110,18 @@ export async function upsertTags(tags: string[]) {
   });
 
   return resolved.map((tag) => ({ tagId: tag.id }));
+}
+
+// ─── Full-Text Search ───────────────────────────────────
+
+export async function fullTextSearchIds(q: string): Promise<string[]> {
+  const tsQuery = q.trim().split(/\s+/).map((w) => w.replace(/[^\w-]/g, '')).filter(Boolean).map((w) => `${w}:*`).join(' & ');
+  if (!tsQuery) return [];
+  const rows = await prisma.$queryRawUnsafe<{ id: string }[]>(
+    `SELECT id FROM skills WHERE search_vector @@ to_tsquery('english', $1)`,
+    tsQuery,
+  );
+  return rows.map((r) => r.id);
 }
 
 // ─── BigInt / Format Helpers ────────────────────────────

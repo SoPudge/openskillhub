@@ -6,7 +6,7 @@ import { prisma } from '../lib/prisma.js';
 import { createStorage } from '../storage/index.js';
 import { authenticate } from './auth.js';
 import { AGENT_TYPES } from '@openskillhub/shared';
-import { validate, NameVersionParamSchema, NameVersionAgentParamSchema } from '../lib/validation.js';
+import { validateOrThrow, NameVersionParamSchema, NameVersionAgentParamSchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
 import { getSkillOrThrow, assertSkillAuthor, getVersionOrThrow } from '../lib/helpers.js';
 
@@ -17,16 +17,13 @@ export async function packageRoutes(app: FastifyInstance) {
   app.post('/:name/versions/:version/packages', {
     config: { rateLimit: { max: 10, timeWindow: '1 hour' } },
   }, async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
+    const userId = await authenticate(request);
+    const { name, version } = validateOrThrow(NameVersionParamSchema, request.params);
 
-    const pv = validate(NameVersionParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-
-    const skill = await getSkillOrThrow(pv.data.name);
+    const skill = await getSkillOrThrow(name);
     assertSkillAuthor(skill, userId);
 
-    const skillVersion = await getVersionOrThrow(skill.id, pv.data.version);
+    const skillVersion = await getVersionOrThrow(skill.id, version);
 
     const data = await request.file();
     if (!data) throw new AppError(400, ErrorCode.VALIDATION_FAILED, 'No file uploaded');
@@ -51,7 +48,7 @@ export async function packageRoutes(app: FastifyInstance) {
           entry.entryName.includes('\0') ||
           entry.entryName.includes('\\')
         ) {
-          request.log.warn({ userId, skillName: pv.data.name, path: entry.entryName }, 'Path traversal detected in zip');
+          request.log.warn({ userId, skillName: name, path: entry.entryName }, 'Path traversal detected in zip');
           throw new AppError(400, ErrorCode.PACKAGE_PATH_TRAVERSAL, 'Zip contains invalid path');
         }
       }
@@ -109,7 +106,7 @@ export async function packageRoutes(app: FastifyInstance) {
       },
     });
 
-    request.log.info({ userId, skillName: pv.data.name, version: pv.data.version, agentType, fileSize: buffer.length }, 'Package uploaded');
+    request.log.info({ userId, skillName: name, version, agentType, fileSize: buffer.length }, 'Package uploaded');
 
     return reply.status(201).send({
       ...pkg,
@@ -119,9 +116,7 @@ export async function packageRoutes(app: FastifyInstance) {
 
   // Download specific version package
   app.get('/:name/versions/:version/packages/:agent', async (request, reply) => {
-    const pv = validate(NameVersionAgentParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-    const { name, version, agent } = pv.data;
+    const { name, version, agent } = validateOrThrow(NameVersionAgentParamSchema, request.params);
 
     const skill = await getSkillOrThrow(name);
     const skillVersion = await getVersionOrThrow(skill.id, version);
@@ -131,9 +126,7 @@ export async function packageRoutes(app: FastifyInstance) {
 
   // Download latest version package
   app.get('/:name/latest/:agent', async (request, reply) => {
-    const pv = validate(NameVersionAgentParamSchema.pick({ name: true, agent: true }), request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-    const { name, agent } = pv.data;
+    const { name, agent } = validateOrThrow(NameVersionAgentParamSchema.pick({ name: true, agent: true }), request.params);
 
     const skill = await getSkillOrThrow(name);
     const latestVersion = await prisma.skillVersion.findFirst({

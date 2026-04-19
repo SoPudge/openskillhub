@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
-import { validate, NameParamSchema, StatsQuerySchema } from '../lib/validation.js';
+import { validateOrThrow, NameParamSchema, StatsQuerySchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
 import { getSkillOrThrow } from '../lib/helpers.js';
 
@@ -9,16 +9,11 @@ export async function statsRoutes(app: FastifyInstance) {
   app.get('/:name/stats', {
     config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
   }, async (request, reply) => {
-    const pv = validate(NameParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-
-    const qv = validate(StatsQuerySchema, request.query);
-    if (!qv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, qv.error);
-
-    const { period, days } = qv.data;
+    const { name } = validateOrThrow(NameParamSchema, request.params);
+    const { period, days } = validateOrThrow(StatsQuerySchema, request.query);
 
     const skill = await prisma.skill.findUnique({
-      where: { name: pv.data.name },
+      where: { name },
       select: { id: true, downloadCount: true },
     });
     if (!skill) throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');

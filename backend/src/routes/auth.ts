@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import type { StringValue } from 'ms';
 import { randomBytes } from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
-import { validate, RegisterSchema, LoginSchema, ApiKeyCreateSchema, IdParamSchema } from '../lib/validation.js';
+import { validateOrThrow, RegisterSchema, LoginSchema, ApiKeyCreateSchema, IdParamSchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -16,9 +16,7 @@ export async function authRoutes(app: FastifyInstance) {
 
   // Register
   app.post('/register', { ...authRateLimit }, async (request, reply) => {
-    const v = validate(RegisterSchema, request.body);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-    const { email, username, password, displayName } = v.data;
+    const { email, username, password, displayName } = validateOrThrow(RegisterSchema, request.body);
 
     const existing = await prisma.user.findFirst({
       where: { OR: [{ email }, { username }] },
@@ -41,9 +39,7 @@ export async function authRoutes(app: FastifyInstance) {
 
   // Login
   app.post('/login', { ...authRateLimit }, async (request, reply) => {
-    const v = validate(LoginSchema, request.body);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-    const { email, password } = v.data;
+    const { email, password } = validateOrThrow(LoginSchema, request.body);
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
@@ -70,8 +66,7 @@ export async function authRoutes(app: FastifyInstance) {
 
   // Get current user
   app.get('/me', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
+    const userId = await authenticate(request);
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -91,12 +86,8 @@ export async function authRoutes(app: FastifyInstance) {
 
   // Create API key
   app.post('/api-keys', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
-
-    const v = validate(ApiKeyCreateSchema, request.body);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-    const { name } = v.data;
+    const userId = await authenticate(request);
+    const { name } = validateOrThrow(ApiKeyCreateSchema, request.body);
     const rawKey = `osh_${randomBytes(24).toString('hex')}`;
     const keyPrefix = rawKey.slice(0, 8);
     const keyHash = await bcrypt.hash(rawKey, 10);
@@ -113,8 +104,7 @@ export async function authRoutes(app: FastifyInstance) {
 
   // List API keys
   app.get('/api-keys', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
+    const userId = await authenticate(request);
 
     const keys = await prisma.apiKey.findMany({
       where: { userId },
@@ -126,14 +116,11 @@ export async function authRoutes(app: FastifyInstance) {
 
   // Delete API key
   app.delete<{ Params: { id: string } }>('/api-keys/:id', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
-
-    const pv = validate(IdParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
+    const userId = await authenticate(request);
+    const { id } = validateOrThrow(IdParamSchema, request.params);
 
     const apiKey = await prisma.apiKey.findFirst({
-      where: { id: pv.data.id, userId },
+      where: { id, userId },
     });
     if (!apiKey) throw new AppError(404, ErrorCode.NOT_FOUND, 'API key not found');
 
@@ -200,13 +187,11 @@ export async function optionalAuthenticate(
 
 export async function authenticate(
   request: { headers: Record<string, string | string[] | undefined>; log: { warn: (obj: Record<string, unknown>, msg: string) => void } },
-  reply: { status: (code: number) => { send: (body: unknown) => unknown } },
-): Promise<string | null> {
+): Promise<string> {
   const result = await resolveCredentials(request.headers);
   if (result.userId) return result.userId;
   if (result.authMethod) {
     request.log.warn({ method: result.authMethod }, `Auth failed: ${result.error}`);
   }
-  reply.status(401).send({ error: result.error });
-  return null;
+  throw new AppError(401, ErrorCode.AUTH_REQUIRED, result.error || 'Authentication required');
 }

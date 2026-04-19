@@ -1,20 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma, USER_SELECT } from '../lib/prisma.js';
-import { createStorage } from '../storage/index.js';
 import { authenticate, optionalAuthenticate } from './auth.js';
 import { AGENT_TYPES } from '@openskillhub/shared';
-import { validate, SkillCreateSchema, SkillUpdateSchema, SkillListQuerySchema, CheckUpdatesSchema, NameParamSchema } from '../lib/validation.js';
+import { validateOrThrow, SkillCreateSchema, SkillUpdateSchema, SkillListQuerySchema, CheckUpdatesSchema, NameParamSchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
-import { getSkillOrThrow, assertSkillAuthor, upsertTags, formatSkill, buildSkillOrderBy } from '../lib/helpers.js';
-
-const storage = createStorage();
+import { getSkillOrThrow, assertSkillAuthor, upsertTags, formatSkill, buildSkillOrderBy, fullTextSearchIds, deleteSkillWithCleanup } from '../lib/helpers.js';
 
 export async function skillRoutes(app: FastifyInstance) {
   // List / Search skills
   app.get('/', async (request, reply) => {
-    const v = validate(SkillListQuerySchema, request.query);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-    const { q, category, tag, agent, author, sort, page, limit } = v.data;
+    const { q, category, tag, agent, author, sort, page, limit } = validateOrThrow(SkillListQuerySchema, request.query);
     const skip = (page - 1) * limit;
 
     const userId = await optionalAuthenticate(request);
@@ -52,20 +47,11 @@ export async function skillRoutes(app: FastifyInstance) {
 
     // Full-text search: use PG tsvector when q is provided
     if (q) {
-      // Convert user query to tsquery (prefix matching with :*)
-      // Sanitize input: strip non-alphanumeric chars to prevent tsquery injection
-      const tsQuery = q.trim().split(/\s+/).map((w) => w.replace(/[^\w-]/g, '')).filter(Boolean).map((w) => `${w}:*`).join(' & ');
-      if (!tsQuery) {
+      const ids = await fullTextSearchIds(q);
+      if (ids.length === 0) {
         return { data: [], total: 0, page, limit, totalPages: 0 };
       }
-      const matchingIds = await prisma.$queryRawUnsafe<{ id: string }[]>(
-        `SELECT id FROM skills WHERE search_vector @@ to_tsquery('english', $1)`,
-        tsQuery,
-      );
-      if (matchingIds.length === 0) {
-        return { data: [], total: 0, page, limit, totalPages: 0 };
-      }
-      where.id = { in: matchingIds.map((r) => r.id) };
+      where.id = { in: ids };
     }
 
     const orderBy = buildSkillOrderBy(sort);
@@ -103,13 +89,12 @@ export async function skillRoutes(app: FastifyInstance) {
 
   // Get skill by name
   app.get('/:name', async (request, reply) => {
-    const pv = validate(NameParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
+    const { name } = validateOrThrow(NameParamSchema, request.params);
 
     const userId = await optionalAuthenticate(request);
 
     const skill = await prisma.skill.findUnique({
-      where: { name: pv.data.name },
+      where: { name },
       include: {
         author: { select: USER_SELECT },
         category: { select: { id: true, name: true, slug: true } },
@@ -127,12 +112,12 @@ export async function skillRoutes(app: FastifyInstance) {
 
     // Visibility check
     if (skill.visibility === 'private' && skill.authorId !== userId) {
-      request.log.debug({ skillName: pv.data.name, visibility: 'private' }, 'Skill access denied');
+      request.log.debug({ skillName: name, visibility: 'private' }, 'Skill access denied');
       throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
     }
     if (skill.visibility === 'team' && skill.teamId) {
       if (!userId) {
-        request.log.debug({ skillName: pv.data.name, visibility: 'team' }, 'Skill access denied');
+        request.log.debug({ skillName: name, visibility: 'team' }, 'Skill access denied');
         throw new AppError(404, ErrorCode.SKILL_NOT_FOUND, 'Skill not found');
       }
       const membership = await prisma.teamMember.findUnique({
@@ -146,12 +131,8 @@ export async function skillRoutes(app: FastifyInstance) {
 
   // Create skill
   app.post('/', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
-
-    const v = validate(SkillCreateSchema, request.body);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-    const { name, displayName, description, categoryId, teamId, visibility, homepageUrl, license, tags } = v.data;
+    const userId = await authenticate(request);
+    const { name, displayName, description, categoryId, teamId, visibility, homepageUrl, license, tags } = validateOrThrow(SkillCreateSchema, request.body);
 
     // Validate team membership if teamId provided
     if (teamId) {
@@ -199,18 +180,14 @@ export async function skillRoutes(app: FastifyInstance) {
 
   // Update skill
   app.patch('/:name', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
+    const userId = await authenticate(request);
+    const { name } = validateOrThrow(NameParamSchema, request.params);
+    const body = validateOrThrow(SkillUpdateSchema, request.body);
 
-    const pv = validate(NameParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-    const v = validate(SkillUpdateSchema, request.body);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-
-    const skill = await getSkillOrThrow(pv.data.name);
+    const skill = await getSkillOrThrow(name);
     assertSkillAuthor(skill, userId);
 
-    const { tags, ...updateData } = v.data;
+    const { tags, ...updateData } = body;
 
     const updated = await prisma.skill.update({
       where: { id: skill.id },
@@ -231,45 +208,27 @@ export async function skillRoutes(app: FastifyInstance) {
       },
     });
 
-    request.log.info({ userId, skillName: pv.data.name, fields: Object.keys(v.data) }, 'Skill updated');
+    request.log.info({ userId, skillName: name, fields: Object.keys(body) }, 'Skill updated');
     return formatSkill(updated);
   });
 
   // Delete skill
   app.delete('/:name', async (request, reply) => {
-    const userId = await authenticate(request, reply);
-    if (!userId) return;
+    const userId = await authenticate(request);
+    const { name } = validateOrThrow(NameParamSchema, request.params);
 
-    const pv = validate(NameParamSchema, request.params);
-    if (!pv.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, pv.error);
-
-    const skill = await getSkillOrThrow(pv.data.name);
+    const skill = await getSkillOrThrow(name);
     assertSkillAuthor(skill, userId);
 
-    // Collect storage paths before cascading delete removes DB records
-    const packages = await prisma.skillPackage.findMany({
-      where: { skillVersion: { skillId: skill.id } },
-      select: { filePath: true },
-    });
+    const packageCount = await deleteSkillWithCleanup(skill.id, request.log);
 
-    await prisma.skill.delete({ where: { id: skill.id } });
-
-    // Best-effort cleanup of stored files (don't fail the request if storage delete fails)
-    const results = await Promise.allSettled(packages.map((pkg) => storage.delete(pkg.filePath)));
-    const failed = results.filter((r) => r.status === 'rejected');
-    if (failed.length > 0) {
-      request.log.error({ skillName: pv.data.name, failedCount: failed.length }, 'Storage cleanup partially failed');
-    }
-
-    request.log.info({ userId, skillName: pv.data.name, packageCount: packages.length }, 'Skill deleted');
+    request.log.info({ userId, skillName: name, packageCount }, 'Skill deleted');
     return reply.status(204).send();
   });
 
   // Check updates (batch) — uses single query instead of N+1
   app.post('/check-updates', async (request, reply) => {
-    const v = validate(CheckUpdatesSchema, request.body);
-    if (!v.success) throw new AppError(400, ErrorCode.VALIDATION_FAILED, v.error);
-    const { skills: installed } = v.data;
+    const { skills: installed } = validateOrThrow(CheckUpdatesSchema, request.body);
 
     const skillNames = installed.map((s) => s.name);
     const skills = await prisma.skill.findMany({
