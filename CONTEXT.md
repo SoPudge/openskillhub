@@ -193,7 +193,8 @@ openskillhub/
 
 ### 🔶 下一步待做
 - Phase 6 全部完成，Phase 7 全部完成
-- 可继续: SDK 包 (TypeScript API client), 更多前端功能, 测试覆盖
+- ✅ SDK 包 (`packages/sdk/`): @openskillhub/sdk TypeScript API client，覆盖全部 39 个端点
+- 可继续: 更多前端功能, 测试覆盖
 
 ### ⚠️ 已知问题
 - `packages/shared` 的 exports 指向 `./src/index.ts` 而非 `./dist/`（因为 tsx dev 模式不编译，生产构建时需改回）
