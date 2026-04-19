@@ -150,8 +150,8 @@ export async function packageRoutes(app: FastifyInstance) {
     skill: { id: string; name: string },
     version: { id: string; version: string },
     agent: string,
-    request: Parameters<Parameters<typeof app.get>[1]>[0],
-    reply: Parameters<Parameters<typeof app.get>[1]>[1],
+    request: { ip?: string; headers: Record<string, string | string[] | undefined>; log: { error: (obj: Record<string, unknown>, msg: string) => void; debug: (obj: Record<string, unknown>, msg: string) => void } },
+    reply: { header: (k: string, v: string) => typeof reply; send: (data: Buffer) => void },
   ) {
     const pkg = await prisma.skillPackage.findUnique({
       where: { skillVersionId_agentType: { skillVersionId: version.id, agentType: agent } },

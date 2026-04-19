@@ -1,13 +1,14 @@
 import type { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import type { StringValue } from 'ms';
 import { randomBytes } from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
 import { validate, RegisterSchema, LoginSchema, ApiKeyCreateSchema, IdParamSchema } from '../lib/validation.js';
 import { AppError, ErrorCode } from '../lib/errors.js';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '7d') as StringValue;
 
 export async function authRoutes(app: FastifyInstance) {
   // Stricter rate limit for auth endpoints
