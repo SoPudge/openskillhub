@@ -32,9 +32,9 @@ openskillhub/
 │   │   ├── storage/      # 抽象层: local / s3
 │   │   └── lib/
 │   │       ├── prisma.ts # PrismaClient 单例
-│   │       ├── validation.ts # 15 个 Zod schema + validate() helper
+│   │       ├── validation.ts # 15+ Zod schema + validate() + validateOrThrow() helper
 │   │       ├── errors.ts # AppError 类 + ErrorCode 枚举 + Prisma 错误映射
-│   │       └── helpers.ts # 共用查找/权限/格式化 helpers
+│   │       └── helpers.ts # 共用查找/权限/格式化/搜索/清理 helpers
 │   └── prisma/           # schema + migrations + seed
 ├── frontend/             # Next.js 前端 (port 3000)
 │   └── src/
@@ -104,7 +104,7 @@ openskillhub/
 | **POST** | **/admin/tags/merge** | **合并标签** |
 | **DELETE** | **/admin/tags/:slug** | **删除标签** |
 
-## 当前进度 (最后更新: 2026-04-19)
+## 当前进度 (最后更新: 2026-04-20)
 
 ### ✅ 已完成
 - **Phase 1 全部**: Monorepo 脚手架、shared 类型、后端 API、前端骨架、local-skill CLI、端到端链路验证
@@ -139,7 +139,7 @@ openskillhub/
   - `AppError` 类 + `ErrorCode` 枚举 (27 个错误码，按模块分组: AUTH/SKILL/VERSION/PACKAGE/TEAM/USER)
   - 全局错误处理器：AppError → `{ error, code }` 响应；Prisma P2002/P2025/P2003 自动映射；Fastify 原生错误兜底
   - 所有路由 `reply.status().send({ error })` 统一改为 `throw new AppError(statusCode, code, message)`
-  - `authenticate()` 保持 null 返回模式（跨路由共用，未改为 throw）
+  - `authenticate()` 改为 throw AppError(401) 模式（不再返回 null，路由无需 `if (!userId) return;`）
 - **代码 DRY 重构 (2026-04-17)**:
   - 新建 `lib/helpers.ts`: `getSkillOrThrow`, `assertSkillAuthor`, `getVersionOrThrow`, `assertTeamRole`, `upsertTags`, `slugifyTag`, `normalizeFileSize`, `formatSkill`
   - skills.ts: 内联 tag upsert → `upsertTags()`，skill 查找+权限 → helpers，移除本地 `formatSkill`
@@ -154,6 +154,14 @@ openskillhub/
   - 修复: `skills/[name]/page.tsx` 和 `DownloadChart.tsx` 中 `AGENT_LABELS[string]` 索引 `Record<AgentType, string>` 的 TypeScript 类型错误 (添加 `as AgentType` 断言)
   - 修复: `skills/[name]/page.tsx` 中 `checksumSha256` 为 undefined 时显示 "SHA256: undefined" 的问题 (改为条件渲染)
   - 验证: `next build` 编译通过，9 个路由全部成功生成，远程前端服务重启正常 (HTTP 200)
+- **后端代码精简优化 (2026-04-20)**:
+  - `validateOrThrow<T>()`: 新增验证+抛错一体化 helper，替换全部 ~42 处 `validate()+if(!success)` 模式
+  - `deleteSkillWithCleanup()`: 抽取技能删除+存储文件清理逻辑到 helpers.ts，skills.ts 和 admin.ts 共用
+  - `authenticate()` 改为直接 throw AppError(401)，移除所有路由中 16 处 `if (!userId) return;` 守卫
+  - Admin 技能搜索使用 `fullTextSearchIds()` (tsvector) 替代 LIKE 模糊搜索
+  - `SkillListQuerySchema` 改为 `PaginationSchema.extend({...})`，消除重复字段定义
+  - `getTeamOrThrow(slug)` 提取到 helpers.ts，teams.ts 5 处复用
+  - 净减 88 行代码 (212 insertions, 300 deletions)
 
 ### 🔶 下一步待做
 - **Prisma 迁移**: `downloadCount`/`fileSize` BigInt 变更尚未生成 migration，需在远程服务器执行 `pnpm --filter backend prisma migrate dev`
