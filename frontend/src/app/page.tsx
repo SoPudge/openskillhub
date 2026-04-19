@@ -16,39 +16,22 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section style={{ textAlign: 'center', padding: '3rem 0' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>OpenSkillHub</h1>
-        <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)' }}>
+      <section className="hero">
+        <div className="hero-orb hero-orb-1" />
+        <div className="hero-orb hero-orb-2" />
+        <div className="hero-orb hero-orb-3" />
+        <h1>OpenSkillHub</h1>
+        <p className="hero-subtitle">
           AI Agent 技能注册中心 — 搜索、分享、管理 AI Agent 技能
         </p>
-        <p style={{ marginTop: '0.75rem', color: 'var(--text-muted)' }}>
+        <p className="hero-agents">
           支持 OpenCode · OpenClaw · Claude Code · Cursor · Goose · Amp
         </p>
-        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-          <Link
-            href="/skills"
-            style={{
-              padding: '0.6rem 1.5rem',
-              background: 'var(--accent)',
-              color: 'white',
-              borderRadius: '6px',
-              textDecoration: 'none',
-              fontSize: '0.95rem',
-            }}
-          >
+        <div className="hero-actions">
+          <Link href="/skills" className="hero-btn-secondary">
             浏览技能
           </Link>
-          <Link
-            href="/categories"
-            style={{
-              padding: '0.6rem 1.5rem',
-              border: '1px solid var(--border-strong)',
-              borderRadius: '6px',
-              textDecoration: 'none',
-              color: 'var(--text)',
-              fontSize: '0.95rem',
-            }}
-          >
+          <Link href="/categories" className="hero-btn-primary">
             按分类浏览
           </Link>
         </div>
@@ -74,6 +57,7 @@ export default async function HomePage() {
               <Link
                 key={cat.slug}
                 href={`/skills?category=${cat.slug}`}
+                className="category-card"
                 style={{
                   border: '1px solid var(--border)',
                   borderRadius: '8px',
@@ -114,6 +98,7 @@ export default async function HomePage() {
               <Link
                 key={skill.id}
                 href={`/skills/${skill.name}`}
+                className="skill-card"
                 style={{
                   border: '1px solid var(--border)',
                   borderRadius: '8px',
