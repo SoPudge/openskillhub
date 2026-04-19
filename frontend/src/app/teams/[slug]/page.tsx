@@ -1,6 +1,7 @@
 import { apiFetch } from '@/lib/api';
 import type { PaginatedResponse } from '@openskillhub/shared';
 import type { TeamDetail, SkillWithMeta } from '@/lib/types';
+import TeamMembers from './TeamMembers';
 
 export default async function TeamPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -14,14 +15,9 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
 
   let skills: SkillWithMeta[] = [];
   try {
-    // Team skills would be listed via the skills API filtered by team
-    // For now, show any public skills from team members
     const ownerSkills = await apiFetch<PaginatedResponse<SkillWithMeta>>(`/skills?author=${team.owner.username}&limit=50`);
     skills = ownerSkills.data || [];
   } catch { /* ignore */ }
-
-  const roleLabel: Record<string, string> = { owner: '所有者', admin: '管理员', member: '成员' };
-  const roleBg: Record<string, string> = { owner: '#fef3c7', admin: '#e0e7ff', member: '#f3f4f6' };
 
   return (
     <div>
@@ -56,22 +52,7 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
         </div>
 
         {/* Members */}
-        <div>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>成员</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {team.members.map((m) => (
-              <div key={m.user.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', border: '1px solid #eee', borderRadius: 6 }}>
-                <a href={`/authors/${m.user.username}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <span style={{ fontWeight: 500 }}>{m.user.displayName || m.user.username}</span>
-                  <span style={{ color: '#999', fontSize: '0.8rem', marginLeft: '0.25rem' }}>@{m.user.username}</span>
-                </a>
-                <span style={{ fontSize: '0.75rem', padding: '0.125rem 0.5rem', background: roleBg[m.role] || '#f3f4f6', borderRadius: 4 }}>
-                  {roleLabel[m.role] || m.role}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <TeamMembers slug={slug} members={team.members} ownerId={team.owner.id} />
       </div>
     </div>
   );
