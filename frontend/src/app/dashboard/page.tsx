@@ -109,8 +109,8 @@ export default function DashboardPage() {
           <p style={{ color: '#666', marginTop: '0.25rem' }}>欢迎, {user.displayName || user.username}</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={() => router.push('/skills')} style={{ ...btnStyle, background: '#111', color: '#fff', border: 'none' }}>
-            浏览技能
+          <button onClick={() => router.push('/publish')} style={{ ...btnStyle, background: '#111', color: '#fff', border: 'none' }}>
+            发布新技能
           </button>
           <button onClick={logout} style={btnStyle}>退出登录</button>
         </div>
