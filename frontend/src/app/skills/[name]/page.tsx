@@ -322,7 +322,7 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ na
           <span style={{ width: '4px', height: '1.25rem', background: 'linear-gradient(180deg, #667eea, #764ba2)', borderRadius: '2px', display: 'inline-block' }} />
           下载趋势
         </h2>
-        <Suspense fallback={<div style={{ color: 'var(--text-muted)' }}>加载统计...</div>}>>
+        <Suspense fallback={<div style={{ color: 'var(--text-muted)' }}>加载统计...</div>}>
           <DownloadChart skillName={skill.name} />
         </Suspense>
       </div>
